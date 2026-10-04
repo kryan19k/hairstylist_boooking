@@ -20,7 +20,7 @@ export default function Hero() {
   const open = useClientValue(() => openNowLabel(new Date(), site.hours), "");
 
   return (
-    <section ref={ref} className="relative isolate flex min-h-[100svh] flex-col justify-end overflow-hidden pt-28 pb-36 sm:pb-40">
+    <section id="hero" ref={ref} className="relative isolate flex min-h-[100svh] flex-col justify-end overflow-hidden pt-28 pb-24">
       <motion.div style={{ y }} className="absolute inset-0 -z-10">
         <StrandField />
         <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_20%_55%,transparent,var(--ink)_95%)]" />
@@ -81,7 +81,7 @@ export default function Hero() {
         </motion.div>
       </motion.div>
 
-      <div className="absolute inset-x-0 bottom-24 overflow-hidden border-y border-line bg-ink/40 py-3 backdrop-blur-sm sm:bottom-28" aria-hidden>
+      <div className="relative mt-12 overflow-hidden border-y border-line bg-ink/40 py-3 backdrop-blur-sm" aria-hidden>
         <div className="marquee flex w-max gap-10 whitespace-nowrap">
           {[...marquee, ...marquee].map((m, i) => (
             <span key={i} className="flex items-center gap-10 font-display text-lg text-cream/60 italic">

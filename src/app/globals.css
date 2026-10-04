@@ -161,6 +161,5 @@ html[data-theme="light"] { color-scheme: light; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
-/* Hairbrush cursor: hide the native pointer on fine-pointer devices once the brush mounts */
+/* Hairbrush cursor: native pointer is hidden only while the brush is showing over the hero */
 html.has-brush, html.has-brush * { cursor: none !important; }
-html.has-brush :is(input, textarea, select) { cursor: text !important; }
