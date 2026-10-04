@@ -11,6 +11,8 @@ import Crud, { ES_SQL, type FieldDef } from "./Crud";
 import BookingsAdmin from "./BookingsAdmin";
 import SettingsAdmin from "./SettingsAdmin";
 import ThemeToggle from "../ThemeToggle";
+import LangToggle from "../LangToggle";
+import { useTx } from "@/lib/locale";
 
 type Gate = "loading" | "signed-out" | "checking" | "owner" | "unclaimed" | "denied" | "no-schema";
 const tabs = [
@@ -57,6 +59,7 @@ const TEAM_SQL = `create table if not exists public.team (
   bio text not null default '',
   photo_url text,
   instagram text not null default '',
+  es jsonb not null default '{}'::jsonb,
   sort int not null default 0,
   active boolean not null default true
 );
@@ -85,6 +88,7 @@ const faqFields: FieldDef[] = [
 ];
 
 function Login() {
+  const tx = useTx();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
@@ -100,8 +104,8 @@ function Login() {
   return (
     <form onSubmit={submit} className="glass mx-auto mt-24 w-full max-w-sm space-y-5 rounded-3xl p-8">
       <div>
-        <p className="text-xs tracking-[0.3em] text-accent uppercase">Owner login</p>
-        <h1 className="font-display mt-2 text-4xl font-light">Welcome back</h1>
+        <p className="text-xs tracking-[0.3em] text-accent uppercase">{tx("Owner login")}</p>
+        <h1 className="font-display mt-2 text-4xl font-light">{tx("Welcome back")}</h1>
       </div>
       <Field label="Email"><input className={inputCls} type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></Field>
       <Field label="Password"><input className={inputCls} type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></Field>
@@ -112,6 +116,7 @@ function Login() {
 }
 
 export default function AdminApp() {
+  const tx = useTx();
   const [gate, setGate] = useState<Gate>("loading");
   const [session, setSession] = useState<Session | null>(null);
   const [tab, setTab] = useState<Tab>("bookings");
@@ -179,7 +184,7 @@ export default function AdminApp() {
   };
 
   const seed = async () => {
-    if (!window.confirm("Load the starter services, portfolio, reviews and FAQ into your database? You can edit or delete everything afterwards.")) return;
+    if (!window.confirm(tx("Load the starter services, portfolio, reviews and FAQ into your database? You can edit or delete everything afterwards."))) return;
     const db = browserClient();
     const results = await Promise.all([
       db.from("services").upsert(services.map((s, i) => ({ id: s.id, name: s.name, category: s.category, blurb: s.blurb, price: s.price, minutes: s.minutes, deposit: s.deposit, es: servicesEs[s.id] ?? {}, sort: i + 1, active: true }))),
@@ -199,16 +204,14 @@ export default function AdminApp() {
   };
 
   if (!hasSupabase) return <Shell><Notice kind="error">Supabase isn’t configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to .env.local.</Notice></Shell>;
-  if (gate === "loading" || gate === "checking") return <Shell><p className="mt-24 text-center text-muted">Loading…</p></Shell>;
+  if (gate === "loading" || gate === "checking") return <Shell><p className="mt-24 text-center text-muted">{tx("Loading…")}</p></Shell>;
   if (gate === "signed-out") return <Shell><Login /></Shell>;
   if (gate === "no-schema")
     return (
       <Shell session={session}>
         <div className="mx-auto mt-16 max-w-xl space-y-4">
-          <h1 className="font-display text-4xl font-light">One-time database setup</h1>
-          <Notice kind="info">
-            Open your Supabase project → <b>SQL Editor</b> → New query, paste the contents of <code>supabase/schema.sql</code> from this project, and press <b>Run</b>. Then reload this page.
-          </Notice>
+          <h1 className="font-display text-4xl font-light">{tx("One-time database setup")}</h1>
+          <Notice kind="info">Open your Supabase project → SQL Editor → New query, paste the contents of supabase/schema.sql from this project, and press Run. Then reload this page.</Notice>
         </div>
       </Shell>
     );
@@ -216,12 +219,12 @@ export default function AdminApp() {
     return (
       <Shell session={session}>
         <div className="mx-auto mt-16 max-w-xl space-y-4">
-          <h1 className="font-display text-4xl font-light">{gate === "denied" ? "Not authorized" : "Claim this website"}</h1>
+          <h1 className="font-display text-4xl font-light">{gate === "denied" ? tx("Not authorized") : tx("Claim this website")}</h1>
           {gate === "denied" ? (
             <Notice kind="error">This account isn’t the owner of this site. Sign out and use the owner login.</Notice>
           ) : (
             <>
-              <p className="text-cream/75">No owner has been set up yet. If you’re the salon owner, claim the dashboard now. This can only be done once.</p>
+              <p className="text-cream/75">{tx("No owner has been set up yet. If you’re the salon owner, claim the dashboard now. This can only be done once.")}</p>
               {note && <Notice kind={note.kind}>{note.text}</Notice>}
               <Btn kind="accent" onClick={claim}>I’m the owner. Claim it</Btn>
             </>
@@ -233,33 +236,33 @@ export default function AdminApp() {
   return (
     <Shell session={session}>
       <div className="mt-8 grid gap-8 lg:grid-cols-[14rem_minmax(0,1fr)]">
-        <nav aria-label="Dashboard sections" className="scroll-hide flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
+        <nav aria-label={tx("Dashboard sections")} className="scroll-hide flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
           {tabs.map(([id, label]) => (
             <button key={id} onClick={() => setTab(id)} aria-current={tab === id} className={`shrink-0 rounded-xl px-4 py-2.5 text-left text-sm transition ${tab === id ? "bg-accent/15 font-semibold text-accent2" : "text-cream/75 hover:bg-ink-3"}`}>
-              {label}
+              {tx(label)}
             </button>
           ))}
         </nav>
         <div className="min-w-0 pb-24">
           {!seeded && (
             <div className="mb-6 space-y-3 rounded-2xl border border-accent/50 bg-accent/10 p-5">
-              <p className="font-medium">Your website is showing sample content.</p>
-              <p className="text-sm text-cream/75">Load the starter services, portfolio, reviews and FAQ into your database so you can edit them here.</p>
+              <p className="font-medium">{tx("Your website is showing sample content.")}</p>
+              <p className="text-sm text-cream/75">{tx("Load the starter services, portfolio, reviews and FAQ into your database so you can edit them here.")}</p>
               <Btn kind="accent" onClick={seed}>Load starter content</Btn>
             </div>
           )}
           {seeded && esState === "needsSql" && (
             <div className="mb-6 space-y-3 rounded-2xl border border-accent/50 bg-accent/10 p-5">
-              <p className="font-medium">Turn on Spanish for your content</p>
-              <p className="text-sm text-cream/75">One-time step: open Supabase → <b>SQL Editor</b> → New query, paste this, press <b>Run</b>, then reload this page.</p>
+              <p className="font-medium">{tx("Turn on Spanish for your content")}</p>
+              <p className="text-sm text-cream/75">{tx("One-time step: open Supabase → SQL Editor → New query, paste this, press Run, then reload this page.")}</p>
               <pre className="max-h-48 overflow-auto rounded-xl border border-line bg-ink-2 p-3 text-xs whitespace-pre-wrap">{ES_SQL}</pre>
               <Btn kind="accent" onClick={() => navigator.clipboard.writeText(ES_SQL).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); })}>{copied ? "Copied ✓" : "Copy SQL"}</Btn>
             </div>
           )}
           {seeded && esState === "needsText" && (
             <div className="mb-6 space-y-3 rounded-2xl border border-accent/50 bg-accent/10 p-5">
-              <p className="font-medium">Add Spanish to your starter content</p>
-              <p className="text-sm text-cream/75">Visitors can switch the site to Spanish. Add ready-made Spanish for the starter services, portfolio, reviews and FAQ now; you can edit any of it afterwards.</p>
+              <p className="font-medium">{tx("Add Spanish to your starter content")}</p>
+              <p className="text-sm text-cream/75">{tx("Visitors can switch the site to Spanish. Add ready-made Spanish for the starter services, portfolio, reviews and FAQ now; you can edit any of it afterwards.")}</p>
               <Btn kind="accent" onClick={seedSpanish}>Add Spanish translations</Btn>
             </div>
           )}
@@ -296,14 +299,16 @@ export default function AdminApp() {
 }
 
 function Shell({ children, session }: { children: React.ReactNode; session?: Session | null }) {
+  const tx = useTx();
   return (
     <div className="mx-auto min-h-dvh max-w-6xl px-4 py-6 sm:px-8">
       <header className="flex items-center justify-between border-b border-line pb-4">
         <div className="flex items-baseline gap-3">
-          <span className="font-display text-2xl">Dashboard</span>
-          <a href="/" className="text-sm text-accent2 hover:underline" target="_blank" rel="noreferrer">View site ↗</a>
+          <span className="font-display text-2xl">{tx("Dashboard")}</span>
+          <a href="/" className="text-sm text-accent2 hover:underline" target="_blank" rel="noreferrer">{tx("View site ↗")}</a>
         </div>
         <div className="flex items-center gap-3">
+          <LangToggle />
           <ThemeToggle />
           {session && <Btn small onClick={() => browserClient().auth.signOut()}>Sign out</Btn>}
         </div>

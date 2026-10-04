@@ -132,12 +132,12 @@ create unique index if not exists bookings_slot_unique on public.bookings (date,
 ------------------------------------------------------------------
 -- Spanish translations (one jsonb per row: {"name": "...", "blurb": "..."})
 ------------------------------------------------------------------
-alter table public.services add column if not exists es jsonb not null default '{}'::jsonb;
-alter table public.addons   add column if not exists es jsonb not null default '{}'::jsonb;
-alter table public.looks    add column if not exists es jsonb not null default '{}'::jsonb;
-alter table public.reviews  add column if not exists es jsonb not null default '{}'::jsonb;
-alter table public.faqs     add column if not exists es jsonb not null default '{}'::jsonb;
-alter table public.team     add column if not exists es jsonb not null default '{}'::jsonb;
+alter table if exists public.services add column if not exists es jsonb not null default '{}'::jsonb;
+alter table if exists public.addons   add column if not exists es jsonb not null default '{}'::jsonb;
+alter table if exists public.looks    add column if not exists es jsonb not null default '{}'::jsonb;
+alter table if exists public.reviews  add column if not exists es jsonb not null default '{}'::jsonb;
+alter table if exists public.faqs     add column if not exists es jsonb not null default '{}'::jsonb;
+alter table if exists public.team     add column if not exists es jsonb not null default '{}'::jsonb;
 notify pgrst, 'reload schema';
 
 ------------------------------------------------------------------

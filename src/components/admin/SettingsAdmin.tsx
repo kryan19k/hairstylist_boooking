@@ -2,13 +2,18 @@
 import { useEffect, useState } from "react";
 import { browserClient } from "@/lib/supabase";
 import { revalidateSite } from "@/app/actions";
-import { dayNames, mergeSettings, type SiteSettings } from "@/lib/site";
+import { mergeSettings, type SiteSettings } from "@/lib/site";
+import { useT, useTx, useLocale, intlTag } from "@/lib/locale";
 import { shades } from "@/lib/shade";
 import { Btn, Field, ImageField, inputCls, Notice } from "./ui";
 
 const order = [2, 3, 4, 5, 6, 0, 1];
 
 export default function SettingsAdmin() {
+  const tx = useTx();
+  const t = useT();
+  const tag = intlTag(useLocale());
+  const dayName = (d: number) => new Date(2024, 0, 7 + d).toLocaleDateString(tag, { weekday: "long" });
   const [s, setS] = useState<SiteSettings | null>(null);
   const [msg, setMsg] = useState<{ kind: "error" | "ok"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -20,7 +25,7 @@ export default function SettingsAdmin() {
     });
   }, []);
 
-  if (!s) return <p className="text-muted">Loading…</p>;
+  if (!s) return <p className="text-muted">{tx("Loading…")}</p>;
   const set = <K extends keyof SiteSettings>(k: K, v: SiteSettings[K]) => setS({ ...s, [k]: v });
   const text = (k: keyof SiteSettings) => ({ className: inputCls, value: String(s[k] ?? ""), onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => set(k, e.target.value as never) });
   const num = (k: keyof SiteSettings) => ({ className: inputCls, type: "number", step: "any", value: String(s[k]), onChange: (e: React.ChangeEvent<HTMLInputElement>) => set(k, Number(e.target.value) as never) });
@@ -46,20 +51,20 @@ export default function SettingsAdmin() {
     const { error } = await browserClient().from("site_settings").upsert({ id: 1, data: s });
     setBusy(false);
     if (error) return setMsg({ kind: "error", text: error.message });
-    setMsg({ kind: "ok", text: "Saved. Your website is updated." });
+    setMsg({ kind: "ok", text: tx("Saved. Your website is updated.") });
     await revalidateSite();
   };
 
   return (
     <form onSubmit={save} className="space-y-10">
       <div>
-        <h2 className="font-display text-3xl font-light">Studio &amp; website</h2>
-        <p className="mt-1 text-sm text-muted">Your name, contact details, hours and the text on your site.</p>
+        <h2 className="font-display text-3xl font-light">{tx("Studio & website")}</h2>
+        <p className="mt-1 text-sm text-muted">{tx("Your name, contact details, hours and the text on your site.")}</p>
       </div>
       {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <h3 className="font-display text-xl sm:col-span-2">Salon</h3>
+        <h3 className="font-display text-xl sm:col-span-2">{tx("Salon")}</h3>
         <Field label="Salon name" hint="Big wordmark in the header"><input {...text("name")} /></Field>
         <Field label="Subtitle" hint="Small text beside the name"><input {...text("tagline")} />{es("tagline")}</Field>
         <Field label="Stylist name"><input {...text("stylist")} /></Field>
@@ -72,7 +77,7 @@ export default function SettingsAdmin() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <h3 className="font-display text-xl sm:col-span-2">Homepage &amp; about</h3>
+        <h3 className="font-display text-xl sm:col-span-2">{tx("Homepage & about")}</h3>
         <Field label="Hero paragraph" className="sm:col-span-2"><textarea {...text("heroBlurb")} className={`${inputCls} min-h-20`} />{es("heroBlurb", true)}</Field>
         <Field label="About headline" className="sm:col-span-2"><input {...text("aboutTitle")} />{es("aboutTitle")}</Field>
         <Field label="About text" className="sm:col-span-2"><textarea {...text("aboutBody")} className={`${inputCls} min-h-32`} />{es("aboutBody", true)}</Field>
@@ -83,37 +88,37 @@ export default function SettingsAdmin() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <h3 className="font-display text-xl sm:col-span-2">Look &amp; feel</h3>
+        <h3 className="font-display text-xl sm:col-span-2">{tx("Look & feel")}</h3>
         <Field label="Default color shade" hint="Visitors can still change it themselves.">
           <select className={inputCls} value={s.defaultShade} onChange={(e) => set("defaultShade", e.target.value)}>
-            {shades.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+            {shades.map((x) => <option key={x.id} value={x.id}>{t(`shade.${x.id}`)}</option>)}
           </select>
         </Field>
         <Field label="Default mode">
           <select className={inputCls} value={s.defaultTheme} onChange={(e) => set("defaultTheme", e.target.value as "light" | "dark")}>
-            <option value="light">Ivory (light)</option>
-            <option value="dark">Black (dark)</option>
+            <option value="light">{tx("Ivory (light)")}</option>
+            <option value="dark">{tx("Black (dark)")}</option>
           </select>
         </Field>
       </section>
 
       <section>
-        <h3 className="font-display text-xl">Opening hours</h3>
-        <p className="mb-4 text-sm text-muted">Clients can only book inside these hours.</p>
+        <h3 className="font-display text-xl">{tx("Opening hours")}</h3>
+        <p className="mb-4 text-sm text-muted">{tx("Clients can only book inside these hours.")}</p>
         <ul className="divide-y divide-line rounded-2xl border border-line bg-ink-2">
           {order.map((d) => {
             const h = s.hours[d];
             return (
               <li key={d} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                <span className="w-28 text-sm font-medium">{dayNames[d]}</span>
+                <span className="w-28 text-sm font-medium capitalize">{dayName(d)}</span>
                 <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" className="size-4 accent-[var(--accent)]" checked={!h} onChange={(e) => setDay(d, e.target.checked ? null : ["10:00", "18:00"])} /> Closed
+                  <input type="checkbox" className="size-4 accent-[var(--accent)]" checked={!h} onChange={(e) => setDay(d, e.target.checked ? null : ["10:00", "18:00"])} /> {tx("Closed")}
                 </label>
                 {h && (
                   <span className="flex items-center gap-2">
-                    <input aria-label={`${dayNames[d]} opens`} type="time" className={`${inputCls} w-auto`} value={h[0]} onChange={(e) => setDay(d, [e.target.value, h[1]])} />
-                    <span className="text-muted">to</span>
-                    <input aria-label={`${dayNames[d]} closes`} type="time" className={`${inputCls} w-auto`} value={h[1]} onChange={(e) => setDay(d, [h[0], e.target.value])} />
+                    <input aria-label={`${dayName(d)} ${tx("opens")}`} type="time" className={`${inputCls} w-auto`} value={h[0]} onChange={(e) => setDay(d, [e.target.value, h[1]])} />
+                    <span className="text-muted">{tx("to")}</span>
+                    <input aria-label={`${dayName(d)} ${tx("closes")}`} type="time" className={`${inputCls} w-auto`} value={h[1]} onChange={(e) => setDay(d, [h[0], e.target.value])} />
                   </span>
                 )}
               </li>

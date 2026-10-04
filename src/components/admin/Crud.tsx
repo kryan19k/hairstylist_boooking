@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { browserClient } from "@/lib/supabase";
 import { revalidateSite } from "@/app/actions";
+import { useTx } from "@/lib/locale";
 import { Btn, Field, ImageField, inputCls, Notice } from "./ui";
 
 export type Es = Record<string, string>;
@@ -31,18 +32,19 @@ type Props = {
   setupSql?: string;
 };
 
-export const ES_SQL = `alter table public.services add column if not exists es jsonb not null default '{}'::jsonb;
-alter table public.addons   add column if not exists es jsonb not null default '{}'::jsonb;
-alter table public.looks    add column if not exists es jsonb not null default '{}'::jsonb;
-alter table public.reviews  add column if not exists es jsonb not null default '{}'::jsonb;
-alter table public.faqs     add column if not exists es jsonb not null default '{}'::jsonb;
-alter table public.team     add column if not exists es jsonb not null default '{}'::jsonb;
+export const ES_SQL = `alter table if exists public.services add column if not exists es jsonb not null default '{}'::jsonb;
+alter table if exists public.addons   add column if not exists es jsonb not null default '{}'::jsonb;
+alter table if exists public.looks    add column if not exists es jsonb not null default '{}'::jsonb;
+alter table if exists public.reviews  add column if not exists es jsonb not null default '{}'::jsonb;
+alter table if exists public.faqs     add column if not exists es jsonb not null default '{}'::jsonb;
+alter table if exists public.team     add column if not exists es jsonb not null default '{}'::jsonb;
 notify pgrst, 'reload schema';`;
 
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "item";
 
 export default function Crud({ table, title, blurb, fields, idMode, titleKey, subtitle, blank, setupSql }: Props) {
   const db = browserClient();
+  const tx = useTx();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [fresh, setFresh] = useState<Set<string>>(new Set());
@@ -91,19 +93,19 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
     if (error) return setMsg({ kind: "error", text: error.message });
     setFresh((f) => { const n = new Set(f); n.delete(row.id as string); return n; });
     setOpen(null);
-    setMsg({ kind: "ok", text: "Saved. Your website is updated." });
+    setMsg({ kind: "ok", text: tx("Saved. Your website is updated.") });
     await revalidateSite();
     await load();
   };
 
   const remove = async (row: Row) => {
-    if (!window.confirm(`Delete “${row[titleKey]}”? This can't be undone.`)) return;
+    if (!window.confirm(tx("Delete “{name}”? This can't be undone.", { name: String(row[titleKey]) }))) return;
     if (fresh.has(row.id as string)) return setRows((rs) => rs!.filter((r) => r.id !== row.id));
     setBusy(true);
     const { error } = await db.from(table).delete().eq("id", row.id as string);
     setBusy(false);
     if (error) return setMsg({ kind: "error", text: error.message });
-    setMsg({ kind: "ok", text: "Deleted." });
+    setMsg({ kind: "ok", text: tx("Deleted.") });
     await revalidateSite();
     await load();
   };
@@ -121,10 +123,8 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
   if (needEs) {
     return (
       <div className="space-y-4">
-        <h2 className="font-display text-3xl font-light">{title}</h2>
-        <Notice kind="info">
-          Spanish support needs a one-time database update. Open Supabase → <b>SQL Editor</b> → New query, paste the SQL below, press <b>Run</b>, then reload this page and save again.
-        </Notice>
+        <h2 className="font-display text-3xl font-light">{tx(title)}</h2>
+        <Notice kind="info">Spanish support needs a one-time database update. Open Supabase → SQL Editor → New query, paste the SQL below, press Run, then reload this page and save again.</Notice>
         <pre className="max-h-72 overflow-auto rounded-2xl border border-line bg-ink-2 p-4 text-xs leading-relaxed whitespace-pre-wrap">{ES_SQL}</pre>
         <Btn kind="accent" onClick={() => navigator.clipboard.writeText(ES_SQL)}>Copy SQL</Btn>
       </div>
@@ -134,10 +134,8 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
   if (missing) {
     return (
       <div className="space-y-4">
-        <h2 className="font-display text-3xl font-light">{title}</h2>
-        <Notice kind="info">
-          This section needs a one-time database update. Open Supabase → <b>SQL Editor</b> → New query, paste the SQL below, press <b>Run</b>, then reload this page.
-        </Notice>
+        <h2 className="font-display text-3xl font-light">{tx(title)}</h2>
+        <Notice kind="info">This section needs a one-time database update. Open Supabase → SQL Editor → New query, paste the SQL below, press Run, then reload this page.</Notice>
         {setupSql && (
           <>
             <pre className="max-h-72 overflow-auto rounded-2xl border border-line bg-ink-2 p-4 text-xs leading-relaxed whitespace-pre-wrap">{setupSql}</pre>
@@ -154,14 +152,14 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="font-display text-3xl font-light">{title}</h2>
-          <p className="mt-1 max-w-xl text-sm text-muted">{blurb}</p>
+          <h2 className="font-display text-3xl font-light">{tx(title)}</h2>
+          <p className="mt-1 max-w-xl text-sm text-muted">{tx(blurb)}</p>
         </div>
         <Btn kind="accent" onClick={add}>+ Add new</Btn>
       </div>
       {msg && <div className="mb-4"><Notice kind={msg.kind}>{msg.text}</Notice></div>}
       {!rows ? (
-        <p className="text-muted">Loading…</p>
+        <p className="text-muted">{tx("Loading…")}</p>
       ) : rows.length === 0 ? (
         <Notice kind="info">Nothing here yet. Click “Add new”.</Notice>
       ) : (
@@ -173,12 +171,12 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
               <li key={id} className={`rounded-2xl border bg-ink-2 ${isOpen ? "border-accent" : "border-line"} ${row.active === false ? "opacity-60" : ""}`}>
                 <div className="flex items-center gap-2 p-3">
                   <div className="flex flex-col">
-                    <button aria-label="Move up" onClick={() => move(i, -1)} disabled={i === 0} className="px-2 text-xs text-muted hover:text-cream disabled:opacity-20">▲</button>
-                    <button aria-label="Move down" onClick={() => move(i, 1)} disabled={i === rows.length - 1} className="px-2 text-xs text-muted hover:text-cream disabled:opacity-20">▼</button>
+                    <button aria-label={tx("Move up")} onClick={() => move(i, -1)} disabled={i === 0} className="px-2 text-xs text-muted hover:text-cream disabled:opacity-20">▲</button>
+                    <button aria-label={tx("Move down")} onClick={() => move(i, 1)} disabled={i === rows.length - 1} className="px-2 text-xs text-muted hover:text-cream disabled:opacity-20">▼</button>
                   </div>
                   <button className="flex-1 py-1 text-left" onClick={() => setOpen(isOpen ? null : id)} aria-expanded={isOpen}>
-                    <span className="font-medium">{String(row[titleKey] || "Untitled")}</span>
-                    {row.active === false && <span className="ml-2 rounded-full bg-ink-3 px-2 py-0.5 text-[0.65rem] text-muted uppercase">Hidden</span>}
+                    <span className="font-medium">{String(row[titleKey] || tx("Untitled"))}</span>
+                    {row.active === false && <span className="ml-2 rounded-full bg-ink-3 px-2 py-0.5 text-[0.65rem] text-muted uppercase">{tx("Hidden")}</span>}
                     {subtitle && <span className="block text-xs text-muted">{subtitle(row)}</span>}
                   </button>
                   <Btn small onClick={() => setOpen(isOpen ? null : id)}>{isOpen ? "Close" : "Edit"}</Btn>
@@ -196,8 +194,8 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
                         return (
                           <label key={f.key} className={`flex items-center gap-3 text-sm ${span}`}>
                             <input type="checkbox" className="size-4 accent-[var(--accent)]" checked={v === true} onChange={(e) => patch(id, { [f.key]: e.target.checked })} />
-                            {f.label}
-                            {f.hint && <span className="text-xs text-muted">({f.hint})</span>}
+                            {tx(f.label)}
+                            {f.hint && <span className="text-xs text-muted">({tx(f.hint)})</span>}
                           </label>
                         );
                       if (f.type === "palette") {
@@ -220,7 +218,7 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
                             <textarea className={`${inputCls} min-h-24`} value={String(v ?? "")} onChange={(e) => patch(id, { [f.key]: e.target.value })} />
                           ) : f.type === "select" ? (
                             <select className={inputCls} value={String(v ?? "")} onChange={(e) => patch(id, { [f.key]: e.target.value })}>
-                              {f.options!.map((o) => <option key={o} value={o}>{o}</option>)}
+                              {f.options!.map((o) => <option key={o} value={o}>{tx(o)}</option>)}
                             </select>
                           ) : f.type === "number" ? (
                             <input className={inputCls} type="number" min={0} step="any" value={String(v ?? 0)} onChange={(e) => patch(id, { [f.key]: Number(e.target.value) })} />
@@ -242,7 +240,7 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
                     })}
                     <label className="flex items-center gap-3 text-sm sm:col-span-2">
                       <input type="checkbox" className="size-4 accent-[var(--accent)]" checked={row.active !== false} onChange={(e) => patch(id, { active: e.target.checked })} />
-                      Show on website
+                      {tx("Show on website")}
                     </label>
                     <div className="flex flex-wrap gap-3 sm:col-span-2">
                       <Btn type="submit" kind="accent" disabled={busy}>{busy ? "Saving…" : "Save changes"}</Btn>
