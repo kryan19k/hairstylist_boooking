@@ -107,6 +107,20 @@ create table if not exists public.team (
   active boolean not null default true
 );
 
+create table if not exists public.products (
+  id text primary key,
+  name text not null,
+  category text not null default 'Hair care',
+  blurb text not null default '',
+  price numeric not null default 0,
+  image_url text,
+  link text not null default '',
+  in_stock boolean not null default true,
+  sort int not null default 0,
+  active boolean not null default true,
+  es jsonb not null default '{}'::jsonb
+);
+
 create table if not exists public.bookings (
   id uuid primary key default gen_random_uuid(),
   ref text not null unique,
@@ -167,7 +181,7 @@ create trigger bookings_no_overlap
 do $$
 declare t text;
 begin
-  foreach t in array array['services','addons','looks','reviews','faqs','team'] loop
+  foreach t in array array['services','addons','looks','reviews','faqs','team','products'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "public read" on public.%I', t);
     execute format('create policy "public read" on public.%I for select to anon, authenticated using (active or public.is_admin())', t);

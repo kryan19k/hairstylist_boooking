@@ -15,12 +15,13 @@ export default async function Home() {
       <Header />
       <main>
         <Hero />
-        <TeamSection />
         <StylistSection />
+        <TeamSection />
         <Studio />
       </main>
       <footer className="border-t border-line px-4 pt-10 pb-32 text-center text-xs text-muted sm:px-8">
-        <p className="font-display text-2xl text-cream">{s.name} <span className="text-base text-muted">{s.tagline}</span></p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt={`${s.name} ${s.tagline}`} width={120} className="logo-img mx-auto mb-3 h-28 w-auto" />
         <p className="mt-2">{s.address}{s.phone ? ` · ${s.phone}` : ""}</p>
         <p className="mt-1">© {new Date().getFullYear()} {s.name} {s.tagline}</p>
       </footer>

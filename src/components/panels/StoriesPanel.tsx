@@ -13,7 +13,7 @@ export default function StoriesPanel() {
   const t = useT();
   return (
     <div>
-      <div className="mb-12 grid gap-6 rounded-3xl border border-line p-6 sm:grid-cols-3 sm:p-8">
+      <div className="mb-12 grid gap-6 rounded-[2.75rem] border border-line p-6 sm:grid-cols-3 sm:p-8">
         {[
           [site.rating.toFixed(2), t("stories.rating")],
           [site.clientsServed, t("stories.clients")],
@@ -32,7 +32,7 @@ export default function StoriesPanel() {
             key={r.id}
             initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.08, duration: 0.6 }}
             whileHover={{ y: -4 }}
-            className="glass relative mb-5 break-inside-avoid rounded-3xl p-6"
+            className="glass relative mb-5 break-inside-avoid rounded-[2.75rem] p-6"
           >
             <span aria-hidden className="font-display absolute top-2 right-5 text-7xl text-accent/20">&rdquo;</span>
             <Stars n={r.stars} />

@@ -17,8 +17,9 @@ export default function StylistSection() {
     <section aria-labelledby="stylist-title" className="relative mx-auto max-w-7xl px-4 pt-14 pb-12 sm:px-8 sm:pt-20 sm:pb-16">
       <div className="grid items-center gap-10 rounded-[2rem] border border-line bg-ink-2/50 p-5 sm:gap-12 sm:p-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="group relative mx-auto w-full max-w-[15rem] sm:max-w-sm">
-          <div className="absolute inset-0 -rotate-3 rounded-[2rem] border border-accent/40" />
-          <Portrait name={s.stylist} src={s.portraitUrl} className="float-slow relative aspect-[4/4.7] rounded-[2rem] sm:aspect-[4/5]" />
+          <div className="blob-b absolute inset-0 -rotate-6 border border-accent/40" />
+          <div aria-hidden className="blob absolute -right-6 -bottom-6 size-24 bg-accent/25 blur-xl" />
+          <Portrait name={s.stylist} src={s.portraitUrl} className="blob-morph float-slow relative aspect-square" />
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1 }}>

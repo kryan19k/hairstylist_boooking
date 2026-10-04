@@ -26,7 +26,7 @@ function BeforeAfter({ look }: { look: Look }) {
   return (
     <div
       ref={box}
-      className="relative aspect-[3/4] w-full cursor-ew-resize touch-none overflow-hidden rounded-2xl select-none"
+      className="relative aspect-[3/4] w-full cursor-ew-resize touch-none overflow-hidden rounded-[2rem] select-none"
       onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); drag(e.clientX); }}
       onPointerMove={(e) => e.buttons && drag(e.clientX)}
     >
@@ -72,7 +72,7 @@ function Lightbox({ look, onClose }: { look: Look; onClose: () => void }) {
       <motion.div
         layoutId={`look-${look.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="glass grid w-full max-w-4xl gap-0 overflow-hidden rounded-3xl md:grid-cols-2"
+        className="glass grid w-full max-w-4xl gap-0 overflow-hidden rounded-[2.75rem] md:grid-cols-2"
       >
         <div className="p-3 md:p-4"><BeforeAfter look={look} /></div>
         <div className="flex flex-col justify-between gap-8 p-6 md:p-8">
@@ -139,7 +139,7 @@ export default function WorkPanel() {
               initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
               transition={{ delay: i * 0.04, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               onClick={() => setOpen(look)}
-              className="group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl text-left"
+              className={`group relative block aspect-[3/4] w-full overflow-hidden text-left ${i % 2 ? "rounded-[1.5rem_3.5rem_1.5rem_3.5rem]" : "rounded-[3.5rem_1.5rem_3.5rem_1.5rem]"}`}
             >
               <div className="absolute inset-0 transition-transform duration-[1200ms] ease-out group-hover:scale-110"><LookImage look={look} /></div>
               <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/10 to-transparent opacity-80 transition group-hover:opacity-100" />

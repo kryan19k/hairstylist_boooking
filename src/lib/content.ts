@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { addons as defaultAddons, faqs as defaultFaqs, looks as defaultLooks, reviews as defaultReviews, services as defaultServices } from "./data";
-import type { Addon, Faq, Look, Review, Service, TeamMember } from "./data";
+import type { Addon, Faq, Look, Product, Review, Service, TeamMember } from "./data";
 import { defaultSettings, mergeSettings, type SiteSettings } from "./site";
 import { addonsEs, faqsEs, looksEs, reviewsEs, servicesEs } from "./data-es";
 import { hasSupabase, serverClient } from "./supabase";
@@ -14,6 +14,7 @@ export type Content = {
   reviews: Review[];
   faqs: Faq[];
   team: TeamMember[];
+  products: Product[];
   busy: Busy[];
   /** true once the owner's database is the source of truth (starter content loaded). */
   live: boolean;
@@ -29,6 +30,7 @@ export const fallbackContent = (): Content => ({
   reviews: (withIds(defaultReviews, "r") as Review[]).map((r, i) => ({ ...r, es: reviewsEs[i] })),
   faqs: (withIds(defaultFaqs, "f") as Faq[]).map((f, i) => ({ ...f, es: faqsEs[i] })),
   team: [],
+  products: [],
   busy: [],
   live: false,
 });
@@ -59,7 +61,7 @@ export const getContent = cache(async (): Promise<Content> => {
     const to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 60);
     const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-    const [st, sv, ad, lk, rv, fq, tm, busy] = await Promise.all([
+    const [st, sv, ad, lk, rv, fq, tm, pr, busy] = await Promise.all([
       db.from("site_settings").select("data").eq("id", 1).maybeSingle(),
       db.from("services").select("*").order("sort", ord),
       db.from("addons").select("*").order("sort", ord),
@@ -67,6 +69,7 @@ export const getContent = cache(async (): Promise<Content> => {
       db.from("reviews").select("*").order("sort", ord),
       db.from("faqs").select("*").order("sort", ord),
       db.from("team").select("*").order("sort", ord),
+      db.from("products").select("*").order("sort", ord),
       db.rpc("busy_slots", { from_date: iso(today), to_date: iso(to) }),
     ]);
     if (st.error) return fb; // tables not created yet
@@ -74,7 +77,11 @@ export const getContent = cache(async (): Promise<Content> => {
     const busyList: Busy[] = (busy.data ?? []).map((b: { date: string; time: string; minutes: number }) => ({ date: b.date, time: b.time, minutes: b.minutes }));
     // Team is independent of "seeded": an empty/missing table just means the owner card is shown.
     const team: TeamMember[] = (tm.data ?? []).map((m) => ({ id: m.id, name: m.name, role: m.role ?? "", bio: m.bio ?? "", photoUrl: m.photo_url ?? "", instagram: m.instagram ?? "", es: m.es ?? undefined }));
-    if (!settings.seeded) return { ...fb, settings, team, busy: busyList };
+    // Products live in their own table; if it hasn't been created yet this is simply empty.
+    const products: Product[] = (pr.data ?? [])
+      .filter((p) => p.active !== false)
+      .map((p) => ({ id: p.id, name: p.name, category: p.category ?? "", blurb: p.blurb ?? "", price: Number(p.price) || 0, imageUrl: p.image_url ?? "", link: p.link ?? "", inStock: p.in_stock !== false, es: p.es ?? undefined }));
+    if (!settings.seeded) return { ...fb, settings, team, products, busy: busyList };
     return {
       settings,
       services: (sv.data ?? []).map(mapService),
@@ -83,6 +90,7 @@ export const getContent = cache(async (): Promise<Content> => {
       reviews: (rv.data ?? []).map((r) => ({ id: r.id, name: r.name, service: r.service, quote: r.quote, stars: r.stars, es: r.es ?? undefined })),
       faqs: (fq.data ?? []).map((f) => ({ id: f.id, q: f.q, a: f.a, es: f.es ?? undefined })),
       team,
+      products,
       busy: busyList,
       live: true,
     };

@@ -18,17 +18,16 @@
   --paper-from: oklch(0.965 0.018 82);
   --paper-to: oklch(0.915 0.025 78);
   --paper-ink: oklch(0.22 0.04 335);
-  --accent: #d4a94a; --accent2: #f0d58c; --counter: #7fa38c;
+  --accent: #d9a441; --accent2: #f3d08a; --counter: #b8741a;
 }
+[data-shade="honey"] { --accent: #d9a441; --accent2: #f3d08a; --counter: #b8741a; }
+[data-shade="platinum"] { --accent: #e6dcc8; --accent2: #faf5ea; --counter: #c9b79a; }
+[data-shade="strawberry"] { --accent: #e08a5a; --accent2: #f5c4a0; --counter: #b85a32; }
+[data-shade="auburn"] { --accent: #b5482a; --accent2: #e58a62; --counter: #7d2a14; }
+[data-shade="chestnut"] { --accent: #a0643c; --accent2: #d49a6a; --counter: #6b3a1e; }
+[data-shade="jet"] { --accent: #8b93a7; --accent2: #c9cedb; --counter: #3b4256; }
+
 /* Dark ("black") shades */
-[data-shade="gold"] { --accent: #d4a94a; --accent2: #f0d58c; --counter: #7fa38c; }
-[data-shade="sage"] { --accent: #9bb89a; --accent2: #d3e4cd; --counter: #d98a73; }
-[data-shade="coral"] { --accent: #f0806a; --accent2: #f7b8a0; --counter: #7fb8a6; }
-[data-shade="copper"] { --accent: #e58a4e; --accent2: #f4c08a; --counter: #4fb3a6; }
-[data-shade="rose"] { --accent: #ec9aa0; --accent2: #f8cdbf; --counter: #8fbf9f; }
-[data-shade="orchid"] { --accent: #b78be8; --accent2: #e6c9f7; --counter: #d9c46a; }
-[data-shade="platinum"] { --accent: #cdd7e8; --accent2: #f2f5fb; --counter: #e0a96d; }
-[data-shade="emerald"] { --accent: #55c79c; --accent2: #b9efd8; --counter: #e88a9a; }
 
 /* Light ("ivory") mode: warm ivory canvas, deep umber text, deeper accents for contrast */
 [data-theme="light"] {
@@ -40,16 +39,15 @@
   --cream-2: oklch(0.3 0.03 55);
   --muted: oklch(0.46 0.03 60);
 }
-[data-theme="light"][data-shade="gold"] { --accent: #a97c1c; --accent2: #cfa23f; --counter: #4f7f66; }
-[data-theme="light"][data-shade="sage"] { --accent: #5d8561; --accent2: #8fb393; --counter: #c0583f; }
-[data-theme="light"][data-shade="coral"] { --accent: #d4553d; --accent2: #ec8a70; --counter: #2f8473; }
-[data-theme="light"][data-shade="copper"] { --accent: #c4642a; --accent2: #e39a5a; --counter: #2f8c80; }
-[data-theme="light"][data-shade="rose"] { --accent: #cf6a76; --accent2: #e89f95; --counter: #5f9a73; }
-[data-theme="light"][data-shade="orchid"] { --accent: #8456c4; --accent2: #b58bdc; --counter: #9a8420; }
-[data-theme="light"][data-shade="platinum"] { --accent: #64779a; --accent2: #9db0cb; --counter: #b8793a; }
-[data-theme="light"][data-shade="emerald"] { --accent: #1c9168; --accent2: #55bf98; --counter: #c0566a; }
 
 /* Accent used as TEXT needs more weight on ivory */
+[data-theme="light"][data-shade="honey"] { --accent: #a8741a; --accent2: #d19a3a; --counter: #7a4f0f; }
+[data-theme="light"][data-shade="platinum"] { --accent: #8a7a5c; --accent2: #b8a888; --counter: #5e5037; }
+[data-theme="light"][data-shade="strawberry"] { --accent: #c4623a; --accent2: #e08a5e; --counter: #8a3c1c; }
+[data-theme="light"][data-shade="auburn"] { --accent: #9a3418; --accent2: #c4623f; --counter: #5e1d0a; }
+[data-theme="light"][data-shade="chestnut"] { --accent: #7d4a28; --accent2: #a8714a; --counter: #4a2812; }
+[data-theme="light"][data-shade="jet"] { --accent: #3a4256; --accent2: #6a7390; --counter: #1c2230; }
+
 [data-theme="light"] .text-accent { color: color-mix(in oklab, var(--accent) 82%, black); }
 [data-theme="light"] .text-accent2 { color: color-mix(in oklab, var(--accent) 70%, black); }
 [data-theme="light"] .text-counter { color: color-mix(in oklab, var(--counter) 82%, black); }
@@ -92,6 +90,7 @@ body::before {
   background:
     radial-gradient(60% 50% at 85% 0%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 70%),
     radial-gradient(50% 45% at 0% 100%, color-mix(in oklab, var(--counter) 12%, transparent), transparent 70%),
+    radial-gradient(38% 30% at 50% 55%, color-mix(in oklab, var(--accent2) 7%, transparent), transparent 70%),
     var(--ink);
   transition: background 0.8s;
 }
@@ -163,3 +162,17 @@ html[data-theme="light"] { color-scheme: light; }
 
 /* Hairbrush cursor: native pointer is hidden only while the brush is showing over the hero */
 html.has-brush, html.has-brush * { cursor: none !important; }
+
+/* Soft, organic shapes */
+.blob { border-radius: 58% 42% 55% 45% / 48% 57% 43% 52%; }
+.blob-b { border-radius: 44% 56% 40% 60% / 58% 42% 58% 42%; }
+@keyframes morph {
+  0%, 100% { border-radius: 58% 42% 55% 45% / 48% 57% 43% 52%; }
+  33% { border-radius: 46% 54% 42% 58% / 57% 45% 55% 43%; }
+  66% { border-radius: 52% 48% 60% 40% / 44% 58% 42% 56%; }
+}
+.blob-morph { animation: morph 14s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .blob-morph { animation: none; } }
+
+/* the champagne logo needs a little more weight on the light (ivory) theme */
+[data-theme="light"] .logo-img { filter: brightness(0.78) contrast(1.15) saturate(1.2); }

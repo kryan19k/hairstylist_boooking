@@ -50,10 +50,12 @@ void main() {
   y += cos(th) * aB.z * (0.3 + 0.9 * smoothstep(0.1, 0.9, t));
   float xx = x;
   // the cursor combs the hair apart
+  // the scissors open a soft channel ALONG the hair (wide in x, narrow in y). The push is a smooth
+  // function of the distance from the cursor line, so there is no hard seam or vertical streaks.
   vec2 d = vec2(xx, y) - uMouse;
-  float f = exp(-dot(d, d) / (210.0 * 210.0));
-  y += (d.y >= 0.0 ? 1.0 : -1.0) * f * 85.0;
-  xx += d.x * f * 0.12;
+  vec2 q = vec2(d.x / 360.0, d.y / 120.0);
+  float f = exp(-dot(q, q));
+  y += (d.y / (abs(d.y) + 38.0)) * f * 78.0;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(xx, y, 0.0, 1.0);
   // soft light bands that travel along the waves, like light rolling over real hair
   vLit = 0.5 + 0.5 * sin(ph + 0.9);

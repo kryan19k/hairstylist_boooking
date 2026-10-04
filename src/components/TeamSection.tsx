@@ -21,9 +21,8 @@ export function Portrait({ name, src, className = "" }: { name: string; src?: st
 export default function TeamSection() {
   const { team, settings: s } = useContent();
   const t = useT();
-  const members = team.length
-    ? team
-    : [{ id: "owner", name: s.stylist, role: t("team.ownerRole"), bio: t("team.ownerBio", { name: s.name, tagline: s.tagline, city: s.city }), photoUrl: s.portraitUrl, instagram: s.instagram }];
+  const members = team;
+  if (members.length === 0) return null; // her own profile is the section above; employees appear here once added
 
   return (
     <section aria-labelledby="team-title" className="relative mx-auto max-w-7xl px-4 pt-16 pb-4 sm:px-8 sm:pt-24 sm:pb-8">
@@ -46,8 +45,8 @@ export default function TeamSection() {
             className="group mx-auto w-full max-w-[17rem] sm:max-w-none"
           >
             <div className="relative">
-              <div className="absolute inset-0 translate-x-3 translate-y-3 rounded-t-[999px] rounded-b-3xl border border-accent/40 transition group-hover:translate-x-4 group-hover:translate-y-4" />
-              <Portrait name={m.name} src={m.photoUrl} className="relative aspect-[4/4.6] rounded-t-[999px] rounded-b-3xl sm:aspect-[4/5]" />
+              <div className="blob-b absolute inset-0 translate-x-3 translate-y-3 border border-accent/40 transition group-hover:translate-x-4 group-hover:translate-y-4" />
+              <Portrait name={m.name} src={m.photoUrl} className="blob-morph relative aspect-square" />
             </div>
             <h3 className="font-display mt-6 text-3xl font-light">{m.name}</h3>
             <p className="mt-1 text-xs tracking-[0.25em] text-accent uppercase">{m.role}</p>

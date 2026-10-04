@@ -75,7 +75,7 @@ export default function Hero() {
               <Link href="/portfolio" className="btn-ghost rounded-full px-5 py-3 text-sm sm:px-7 sm:py-3.5 sm:text-base">{t("hero.work")}</Link>
             </div>
           </div>
-          <div className="glass flex w-full items-center justify-between gap-4 self-start rounded-2xl px-4 py-3 sm:w-auto sm:gap-5 sm:px-5 sm:py-4 lg:self-auto">
+          <div className="glass flex w-full items-center justify-between gap-4 self-start rounded-[2rem] px-4 py-3 sm:w-auto sm:gap-5 sm:px-5 sm:py-4 lg:self-auto">
             <div>
               <p className="text-[0.65rem] tracking-[0.25em] text-muted uppercase">{t("hero.shade")}</p>
               <p className="mt-1 hidden text-sm text-cream/70 sm:block">{t("hero.shadeHint")}</p>
@@ -85,7 +85,7 @@ export default function Hero() {
         </motion.div>
       </motion.div>
 
-      <div className="relative mt-12 overflow-hidden border-y border-line bg-ink/40 py-3 backdrop-blur-sm" aria-hidden>
+      <div className="relative mx-3 mt-12 overflow-hidden rounded-full border border-line bg-ink/40 py-3 backdrop-blur-sm sm:mx-8" aria-hidden>
         <div className="marquee flex w-max gap-10 whitespace-nowrap">
           {[...marqueeKeys, ...marqueeKeys].map((m, i) => (
             <span key={i} className="flex items-center gap-10 font-display text-lg text-cream/60 italic">

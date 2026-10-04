@@ -23,6 +23,7 @@ const tabs = [
   ["addons", "Add-ons"],
   ["team", "Team"],
   ["looks", "Portfolio"],
+  ["products", "Products"],
   ["reviews", "Reviews"],
   ["faqs", "FAQ"],
   ["settings", "Studio & site"],
@@ -70,6 +71,36 @@ drop policy if exists "public read" on public.team;
 create policy "public read" on public.team for select to anon, authenticated using (active or public.is_admin());
 drop policy if exists "admin write" on public.team;
 create policy "admin write" on public.team for all to authenticated using (public.is_admin()) with check (public.is_admin());`;
+
+const PRODUCTS_SQL = `create table if not exists public.products (
+  id text primary key,
+  name text not null,
+  category text not null default 'Hair care',
+  blurb text not null default '',
+  price numeric not null default 0,
+  image_url text,
+  link text not null default '',
+  in_stock boolean not null default true,
+  sort int not null default 0,
+  active boolean not null default true,
+  es jsonb not null default '{}'::jsonb
+);
+alter table public.products enable row level security;
+drop policy if exists "public read" on public.products;
+create policy "public read" on public.products for select to anon, authenticated using (active or public.is_admin());
+drop policy if exists "admin write" on public.products;
+create policy "admin write" on public.products for all to authenticated using (public.is_admin()) with check (public.is_admin());
+notify pgrst, 'reload schema';`;
+
+const productFields: FieldDef[] = [
+  { key: "image_url", label: "Photo", type: "image" },
+  { key: "name", label: "Product name", type: "text", tr: true },
+  { key: "category", label: "Category", type: "select", options: ["Eyelash extensions", "Hair care", "Shampoo & conditioner", "Styling", "Treatments", "Tools", "Other"] },
+  { key: "blurb", label: "Short description", type: "textarea", tr: true },
+  { key: "price", label: "Price ($)", type: "number", hint: "0 = don't show a price" },
+  { key: "link", label: "Online buy link (optional)", type: "text", hint: "If set, shows a “Buy online” button." },
+  { key: "in_stock", label: "In stock", type: "bool" },
+];
 
 const teamFields: FieldDef[] = [
   { key: "photo_url", label: "Photo", type: "image" },
@@ -282,6 +313,10 @@ export default function AdminApp() {
           {tab === "team" && (
             <Crud key="team" table="team" title="Team" blurb="People shown in “Meet the team” under the homepage banner. If this is empty, the owner card is shown automatically." fields={teamFields} idMode="uuid" titleKey="name"
               subtitle={(r) => String(r.role)} blank={{ name: "", role: "", bio: "", photo_url: null, instagram: "", active: true }} setupSql={TEAM_SQL} />
+          )}
+          {tab === "products" && (
+            <Crud key="products" table="products" title="Products" blurb="Shown on the Products page: eyelash extensions, shampoo, treatments and anything else you sell. Add a photo, price and description." fields={productFields} idMode="slug" titleKey="name"
+              subtitle={(r) => `${r.category}${Number(r.price) ? ` · $${r.price}` : ""}${r.in_stock === false ? " · sold out" : ""}`} blank={{ name: "", category: "Hair care", blurb: "", price: 0, link: "", in_stock: true, image_url: null, active: true }} setupSql={PRODUCTS_SQL} />
           )}
           {tab === "looks" && (
             <Crud key="looks" table="looks" title="Portfolio" blurb="Upload your best work. Add a “before” photo to turn on the before/after slider." fields={lookFields} idMode="slug" titleKey="title"

@@ -59,7 +59,7 @@ export const defaultSettings: SiteSettings = {
     "I'm Fabiola. For over a decade I've built my work on slow, honest consultations and color that grows out beautifully. No rushed chairs, no cookie-cutter formulas: one client at a time, in a calm salon where you can exhale.",
   portraitUrl: "",
   directionsNote: "Free parking out front.",
-  defaultShade: "gold",
+  defaultShade: "honey",
   defaultTheme: "light",
   seeded: false,
   es: {

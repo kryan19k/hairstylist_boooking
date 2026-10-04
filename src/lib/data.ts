@@ -1,13 +1,14 @@
 // Starter content. Shown until the owner loads it into Supabase (admin → Load starter
 // content); after that the database is the source of truth. Reviews are placeholders.
 
+export type Es = Record<string, string>;
+
 export type Review = { es?: Es; id: string; name: string; service: string; quote: string; stars: number };
 export type Faq = { es?: Es; id: string; q: string; a: string };
+export type Product = { es?: Es; id: string; name: string; category: string; blurb: string; price: number; imageUrl: string; link: string; inStock: boolean };
 export type TeamMember = { es?: Es; id: string; name: string; role: string; bio: string; photoUrl: string; instagram: string };
 
 export type ServiceCategory = "Cut" | "Color" | "Blonding" | "Styling";
-
-export type Es = Record<string, string>;
 
 export type Service = {
   es?: Es;

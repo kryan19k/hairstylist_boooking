@@ -22,7 +22,7 @@ function nextLabel(opts: Parameters<typeof nextAvailable>[2], t: TFn, tag: strin
 }
 
 export default function Header() {
-  const { settings: site } = useContent();
+  const { settings: site, products } = useContent();
   const home = usePathname() === "/";
   const opts = useSlotOpts();
   const t = useT();
@@ -32,18 +32,21 @@ export default function Header() {
   const bg = useTransform(scrollY, [0, 200], [0, 1]);
   return (
     <header className="fixed inset-x-0 top-0 z-40">
-      <motion.div aria-hidden style={{ opacity: bg }} className="glass absolute inset-0 border-x-0 border-t-0" />
+      <motion.div aria-hidden style={{ opacity: bg }} className="glass absolute inset-x-2 inset-y-1 rounded-full sm:inset-x-4" />
       <div className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-8">
         <Link
           href="/"
           onClick={(e) => { if (home) { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); } }}
           className="flex items-baseline gap-2"
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-mark.png" alt="" width={44} height={44} className="logo-img size-10 self-center sm:size-11" />
           <span className="font-display text-2xl font-medium tracking-tight">{site.name}</span>
           <span className="hidden text-[0.65rem] tracking-[0.3em] text-muted uppercase sm:inline">{site.tagline}</span>
         </Link>
         <div className="flex items-center gap-3 sm:gap-6">
           <Link href="/portfolio" className="hidden text-sm text-cream/80 transition hover:text-accent lg:block">{t("nav.portfolio")}</Link>
+          {products.length > 0 && <Link href="/products" className="hidden text-sm text-cream/80 transition hover:text-accent lg:block">{t("nav.products")}</Link>}
           <div className="hidden md:block"><ShadeSwitcher /></div>
           <LangToggle />
           <ThemeToggle />

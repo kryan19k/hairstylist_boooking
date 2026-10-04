@@ -34,7 +34,7 @@ function Ticket({ summary, opts }: { summary: ReturnType<typeof useSummary>; opt
   const { service, picked, minutes, total } = summary;
   const end = date && time ? getSlots(date, minutes, opts).find((s) => s.time === time)?.endsAt : null;
   return (
-    <div className="paper relative rounded-3xl p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] [mask-image:radial-gradient(circle_9px_at_0_62%,transparent_98%,#000),radial-gradient(circle_9px_at_100%_62%,transparent_98%,#000)] [mask-composite:intersect]">
+    <div className="paper relative rounded-[2.75rem] p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] [mask-image:radial-gradient(circle_9px_at_0_62%,transparent_98%,#000),radial-gradient(circle_9px_at_100%_62%,transparent_98%,#000)] [mask-composite:intersect]">
       <div className="flex items-baseline justify-between">
         <p className="font-display text-xl">{site.name}</p>
         <p className="text-[0.65rem] tracking-[0.3em] uppercase opacity-60">{t("ticket.title")}</p>
@@ -86,7 +86,7 @@ function StepService({ onNext }: { onNext: () => void }) {
           const on = serviceId === s.id;
           return (
             <button key={s.id} role="radio" aria-checked={on} onClick={() => setService(s.id, note)}
-              className={`relative rounded-2xl border p-5 text-left transition ${on ? "border-accent bg-accent/10" : "border-line hover:border-cream/40"}`}>
+              className={`relative rounded-[2rem] border p-5 text-left transition ${on ? "border-accent bg-accent/10" : "border-line hover:border-cream/40"}`}>
               <div className="flex items-start justify-between gap-3">
                 <p className="font-display text-xl leading-tight">{s.name}</p>
                 <span className="text-accent2">${s.price}+</span>
@@ -147,7 +147,7 @@ function StepTime({ minutes, opts, onBack, onNext }: { minutes: number; opts: Re
           const on = sel === d;
           return (
             <button key={d} role="option" aria-selected={on} disabled={!avail} onClick={() => setSel(d)}
-              className={`relative flex w-16 shrink-0 flex-col items-center rounded-2xl border py-3 transition ${on ? "border-accent bg-accent text-on-accent" : avail ? "border-line hover:border-cream/40" : "border-transparent opacity-30"}`}>
+              className={`relative flex w-16 shrink-0 flex-col items-center rounded-[2rem] border py-3 transition ${on ? "border-accent bg-accent text-on-accent" : avail ? "border-line hover:border-cream/40" : "border-transparent opacity-30"}`}>
               <span className="text-[0.65rem] tracking-widest uppercase opacity-70">{dt.toLocaleDateString(tag, { weekday: "short" })}</span>
               <span className="font-display text-2xl">{dt.getDate()}</span>
               <span className="text-[0.65rem] opacity-70">{dt.toLocaleDateString(tag, { month: "short" })}</span>
@@ -171,7 +171,7 @@ function StepTime({ minutes, opts, onBack, onNext }: { minutes: number; opts: Re
                   const on = date === sel && time === s.time;
                   return (
                     <button key={s.time} aria-pressed={on} onClick={() => setSlot(sel, s.time)}
-                      className={`rounded-xl border py-2.5 text-sm transition ${on ? "border-accent bg-accent font-semibold text-on-accent" : "border-line hover:border-accent/60 hover:bg-accent/10"}`}>
+                      className={`rounded-[1.6rem] border py-2.5 text-sm transition ${on ? "border-accent bg-accent font-semibold text-on-accent" : "border-line hover:border-accent/60 hover:bg-accent/10"}`}>
                       {formatTime(s.time)}
                     </button>
                   );
@@ -200,7 +200,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
     </label>
   );
 }
-const input = "w-full rounded-xl border border-line bg-ink-2/60 px-4 py-3 text-cream placeholder:text-cream/30 transition focus:border-accent";
+const input = "w-full rounded-[1.6rem] border border-line bg-ink-2/60 px-4 py-3 text-cream placeholder:text-cream/30 transition focus:border-accent";
 
 function StepDetails({ onBack, onDone }: { onBack: () => void; onDone: (d: Done) => void }) {
   const t = useT();
@@ -243,7 +243,7 @@ function StepDetails({ onBack, onDone }: { onBack: () => void; onDone: (d: Done)
         <input type="checkbox" checked={form.firstVisit} onChange={(e) => setForm({ ...form, firstVisit: e.target.checked })} className="size-4 accent-[var(--accent)]" />
         {t("book.first")}
       </label>
-      {serverError && <p role="alert" className="rounded-xl border border-[#ff8f8f]/40 bg-[#ff8f8f]/10 px-4 py-3 text-sm text-[#ffb3b3]">{serverError}</p>}
+      {serverError && <p role="alert" className="rounded-[1.6rem] border border-[#ff8f8f]/40 bg-[#ff8f8f]/10 px-4 py-3 text-sm text-[#ffb3b3]">{serverError}</p>}
       <p className="text-xs text-muted">{t("book.policy")}</p>
       <div className="flex gap-3 pt-2">
         <button type="button" onClick={onBack} className="btn-ghost rounded-full px-6 py-3.5">{t("common.back")}</button>
@@ -297,7 +297,7 @@ function Confirmed({ done, serviceName, date, time, onAgain }: { done: Done; ser
 
 /* ---- Shell ---- */
 function Skeleton() {
-  return <div className="grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"><div className="h-96 animate-pulse rounded-3xl bg-ink-3/60" /><div className="h-96 animate-pulse rounded-3xl bg-ink-3/60" /></div>;
+  return <div className="grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"><div className="h-96 animate-pulse rounded-[2.75rem] bg-ink-3/60" /><div className="h-96 animate-pulse rounded-[2.75rem] bg-ink-3/60" /></div>;
 }
 
 function BookFlow({ live }: { live: Busy[] }) {
@@ -319,7 +319,7 @@ function BookFlow({ live }: { live: Busy[] }) {
       <div className="min-w-0">
         {/* phones: a slim running total instead of the full receipt below the form */}
         {summary.service && (
-          <div className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-line bg-ink-2 px-4 py-3 text-sm lg:hidden">
+          <div className="mb-6 flex items-center justify-between gap-3 rounded-[2rem] border border-line bg-ink-2 px-4 py-3 text-sm lg:hidden">
             <span className="min-w-0 truncate">
               <span className="font-medium">{summary.service.name}</span>
               <span className="text-muted">{date && time ? ` · ${parseDateKey(date).toLocaleDateString(tag, { month: "short", day: "numeric" })}, ${formatTime(time)}` : ` · ${dur(summary.minutes)}`}</span>

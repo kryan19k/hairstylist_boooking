@@ -15,7 +15,7 @@ function Hours() {
   const today = useClientValue(() => new Date().getDay(), -1);
   const label = useClientValue(() => openNowLabel(new Date(), site.hours, t, tag), "");
   return (
-    <div className="glass rounded-3xl p-6">
+    <div className="glass rounded-[2.75rem] p-6">
       <div className="flex items-center justify-between">
         <h3 className="font-display text-2xl">{t("info.hours")}</h3>
         {label && <span className="flex items-center gap-2 text-xs text-counter"><span className="pulse-dot size-2 rounded-full bg-counter" />{label}</span>}
@@ -40,7 +40,7 @@ function Gift() {
   const t = useT();
   const [amt, setAmt] = useState(100);
   return (
-    <div className="paper relative overflow-hidden rounded-3xl p-6">
+    <div className="paper relative overflow-hidden rounded-[2.75rem] p-6">
       <div className="pointer-events-none absolute -right-10 -bottom-10 size-48 rounded-full bg-[radial-gradient(circle,var(--accent),transparent_70%)] opacity-50" />
       <p className="text-xs tracking-[0.3em] uppercase opacity-60">{t("info.gift")}</p>
       <h3 className="font-display mt-2 text-3xl">{t("info.giftTitle")}</h3>
@@ -96,7 +96,7 @@ export default function StudioPanel() {
     <div className="space-y-16">
       <div className="grid gap-6 lg:grid-cols-3">
         <Hours />
-        <div className="glass rounded-3xl p-6">
+        <div className="glass rounded-[2.75rem] p-6">
           <h3 className="font-display text-2xl">{t("info.find")}</h3>
           <p className="mt-4 text-cream/80">{site.address}</p>
           {site.directionsNote && <p className="mt-4 text-sm text-muted">{site.directionsNote}</p>}
@@ -115,7 +115,7 @@ export default function StudioPanel() {
         <h3 className="font-display text-3xl">{t("info.aftercare")}</h3>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((n, i) => (
-            <motion.div key={n} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} className="rounded-2xl border border-line p-5">
+            <motion.div key={n} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} className="rounded-[2rem] border border-line p-5">
               <span className="font-display text-3xl text-accent">0{n}</span>
               <p className="mt-2 font-medium">{t(`care.${n}.t`)}</p>
               <p className="mt-1 text-sm text-cream/65">{t(`care.${n}.b`)}</p>

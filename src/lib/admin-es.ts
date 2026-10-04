@@ -131,6 +131,20 @@ export const adminEs: Record<string, string> = {
   "Extra protection against double-booking": "Protección extra contra doble reserva",
   "The site already hides times that would overlap. Run this once in Supabase → SQL Editor so the database itself refuses overlapping appointments too.": "El sitio ya oculta los horarios que se cruzarían. Ejecuta esto una vez en Supabase → SQL Editor para que la base de datos también rechace citas que se cruzan.",
 
+  "Products": "Productos",
+  "Product name": "Nombre del producto",
+  "Online buy link (optional)": "Enlace para comprar en línea (opcional)",
+  "If set, shows a “Buy online” button.": "Si lo pones, muestra un botón “Comprar en línea”.",
+  "0 = don't show a price": "0 = no mostrar precio",
+  "In stock": "Disponible",
+  "Eyelash extensions": "Extensiones de pestañas",
+  "Hair care": "Cuidado del cabello",
+  "Shampoo & conditioner": "Champú y acondicionador",
+  "Treatments": "Tratamientos",
+  "Tools": "Herramientas",
+  "Other": "Otros",
+  "Shown on the Products page: eyelash extensions, shampoo, treatments and anything else you sell. Add a photo, price and description.": "Aparece en la página Productos: extensiones de pestañas, champú, tratamientos y todo lo que vendas. Agrega foto, precio y descripción.",
+
   // list editor
   "+ Add new": "+ Agregar",
   "Nothing here yet. Click “Add new”.": "Aún no hay nada. Haz clic en “Agregar”.",

@@ -32,7 +32,7 @@ function Quiz() {
   const result = done ? (services.find((s) => s.id === recommend(answers)) ?? services[0] ?? null) : null;
 
   return (
-    <div className="glass relative overflow-hidden rounded-3xl p-6 sm:p-8">
+    <div className="glass relative overflow-hidden rounded-[2.75rem] p-6 sm:p-8">
       <div className="pointer-events-none absolute -top-20 -right-20 size-64 rounded-full bg-accent/20 blur-3xl" />
       <p className="text-xs tracking-[0.3em] text-counter uppercase">{t("quiz.kicker")}</p>
       <AnimatePresence mode="wait">
@@ -45,7 +45,7 @@ function Quiz() {
                   <button
                     key={v}
                     onClick={() => { setAnswers([...answers, v]); setStep(step + 1); }}
-                    className="btn-ghost rounded-xl px-5 py-3.5 text-left text-sm"
+                    className="btn-ghost rounded-[1.6rem] px-5 py-3.5 text-left text-sm"
                   >
                     {t(`quiz.${questions[step].id}.${v}`)}
                   </button>
@@ -122,7 +122,7 @@ export default function ServicesPanel() {
           <p className="text-xs tracking-[0.3em] text-muted uppercase">{t("menu.enhance")}</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {addons.map((a) => (
-              <div key={a.id} className="flex items-center justify-between rounded-xl border border-line px-4 py-3">
+              <div key={a.id} className="flex items-center justify-between rounded-[1.6rem] border border-line px-4 py-3">
                 <div><p className="font-medium">{a.name}</p><p className="text-xs text-muted">{a.blurb}</p></div>
                 <span className="text-accent2">+${a.price}</span>
               </div>

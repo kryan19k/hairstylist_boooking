@@ -23,5 +23,6 @@ export function localizeContent(c: Content, locale: Locale): Content {
     reviews: c.reviews.map((x) => pick(x, locale)),
     faqs: c.faqs.map((x) => pick(x, locale)),
     team: c.team.map((x) => pick(x, locale)),
+    products: c.products.map((x) => pick(x, locale)),
   };
 }
