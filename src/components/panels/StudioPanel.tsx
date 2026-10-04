@@ -3,11 +3,9 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { aftercare } from "@/lib/data";
 import { dayNames } from "@/lib/site";
-import Image from "next/image";
 import { useContent } from "../ContentProvider";
 import { formatTime, openNowLabel } from "@/lib/availability";
 import { useClientValue } from "@/lib/client-value";
-import { goTab } from "@/lib/tabs";
 
 const gifts = [50, 100, 150, 250];
 
@@ -92,28 +90,6 @@ export default function StudioPanel() {
   const { settings: site } = useContent();
   return (
     <div className="space-y-16">
-      <div className="grid items-center gap-10 lg:grid-cols-[1fr_1.2fr]">
-        <div className="relative mx-auto aspect-[4/5] w-full max-w-sm">
-          <div className="absolute inset-0 rotate-3 rounded-[2rem] border border-accent/40" />
-          <div className="float-slow absolute inset-0 grid place-items-center overflow-hidden rounded-[2rem] bg-gradient-to-br from-ink-3 via-accent/30 to-counter/30">
-            {site.portraitUrl ? (
-              <Image src={site.portraitUrl} alt={site.stylist} fill sizes="(max-width:768px) 90vw, 384px" className="object-cover" />
-            ) : (
-              <span className="font-display px-6 text-center text-6xl font-light italic text-cream/80">{site.stylist.split(" ")[0]}</span>
-            )}
-          </div>
-        </div>
-        <div>
-          <p className="text-xs tracking-[0.3em] text-accent uppercase">Meet your stylist</p>
-          <h3 className="font-display mt-3 text-4xl leading-tight font-light sm:text-5xl">{site.aboutTitle}</h3>
-          <p className="mt-6 max-w-xl leading-relaxed text-cream/75">{site.aboutBody}</p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button onClick={() => goTab("book")} className="btn-accent rounded-full px-7 py-3.5">Book a consultation</button>
-            {site.instagram && <a href={`https://instagram.com/${site.instagram}`} target="_blank" rel="noreferrer" className="btn-ghost rounded-full px-7 py-3.5">@{site.instagram}</a>}
-          </div>
-        </div>
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-3">
         <Hours />
         <div className="glass rounded-3xl p-6">

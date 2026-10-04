@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { addons as defaultAddons, faqs as defaultFaqs, looks as defaultLooks, reviews as defaultReviews, services as defaultServices } from "./data";
-import type { Addon, Faq, Look, Review, Service } from "./data";
+import type { Addon, Faq, Look, Review, Service, TeamMember } from "./data";
 import { defaultSettings, mergeSettings, type SiteSettings } from "./site";
 import { hasSupabase, serverClient } from "./supabase";
 import type { Busy } from "./availability";
@@ -12,6 +12,7 @@ export type Content = {
   looks: Look[];
   reviews: Review[];
   faqs: Faq[];
+  team: TeamMember[];
   busy: Busy[];
   /** true once the owner's database is the source of truth (starter content loaded). */
   live: boolean;
@@ -26,6 +27,7 @@ export const fallbackContent = (): Content => ({
   looks: defaultLooks,
   reviews: withIds(defaultReviews, "r") as Review[],
   faqs: withIds(defaultFaqs, "f") as Faq[],
+  team: [],
   busy: [],
   live: false,
 });
@@ -56,19 +58,22 @@ export const getContent = cache(async (): Promise<Content> => {
     const to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 60);
     const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-    const [st, sv, ad, lk, rv, fq, busy] = await Promise.all([
+    const [st, sv, ad, lk, rv, fq, tm, busy] = await Promise.all([
       db.from("site_settings").select("data").eq("id", 1).maybeSingle(),
       db.from("services").select("*").order("sort", ord),
       db.from("addons").select("*").order("sort", ord),
       db.from("looks").select("*").order("sort", ord),
       db.from("reviews").select("*").order("sort", ord),
       db.from("faqs").select("*").order("sort", ord),
+      db.from("team").select("*").order("sort", ord),
       db.rpc("busy_slots", { from_date: iso(today), to_date: iso(to) }),
     ]);
     if (st.error) return fb; // tables not created yet
     const settings = mergeSettings(st.data?.data);
     const busyList: Busy[] = (busy.data ?? []).map((b: { date: string; time: string; minutes: number }) => ({ date: b.date, time: b.time, minutes: b.minutes }));
-    if (!settings.seeded) return { ...fb, settings, busy: busyList };
+    // Team is independent of "seeded": an empty/missing table just means the owner card is shown.
+    const team: TeamMember[] = (tm.data ?? []).map((m) => ({ id: m.id, name: m.name, role: m.role ?? "", bio: m.bio ?? "", photoUrl: m.photo_url ?? "", instagram: m.instagram ?? "" }));
+    if (!settings.seeded) return { ...fb, settings, team, busy: busyList };
     return {
       settings,
       services: (sv.data ?? []).map(mapService),
@@ -76,6 +81,7 @@ export const getContent = cache(async (): Promise<Content> => {
       looks: (lk.data ?? []).map(mapLook),
       reviews: (rv.data ?? []).map((r) => ({ id: r.id, name: r.name, service: r.service, quote: r.quote, stars: r.stars })),
       faqs: (fq.data ?? []).map((f) => ({ id: f.id, q: f.q, a: f.a })),
+      team,
       busy: busyList,
       live: true,
     };

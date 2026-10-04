@@ -7,7 +7,7 @@ import { lookCategories, type Look } from "@/lib/data";
 import { useContent } from "../ContentProvider";
 import { formatDuration } from "@/lib/availability";
 import { useBooking } from "@/lib/booking-store";
-import { goTab } from "@/lib/tabs";
+import { useRouter } from "next/navigation";
 
 function LookImage({ look, muted = false }: { look: Look; muted?: boolean }) {
   const src = muted ? look.before : look.image;
@@ -48,6 +48,7 @@ function BeforeAfter({ look }: { look: Look }) {
 
 function Lightbox({ look, onClose }: { look: Look; onClose: () => void }) {
   const setService = useBooking((s) => s.setService);
+  const router = useRouter();
   const { services } = useContent();
   const service = services.find((s) => s.id === look.serviceId);
   useEffect(() => {
@@ -90,7 +91,7 @@ function Lightbox({ look, onClose }: { look: Look; onClose: () => void }) {
           <div className="flex gap-3">
             <button
               className="btn-accent flex-1 rounded-full px-6 py-3.5"
-              onClick={() => { setService(service?.id ?? null, `Inspired by “${look.title}”`); onClose(); goTab("book"); }}
+              onClick={() => { setService(service?.id ?? null, `Inspired by “${look.title}”`); onClose(); router.push("/#book"); }}
             >
               Book this look
             </button>

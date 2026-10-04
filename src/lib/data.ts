@@ -3,6 +3,7 @@
 
 export type Review = { id: string; name: string; service: string; quote: string; stars: number };
 export type Faq = { id: string; q: string; a: string };
+export type TeamMember = { id: string; name: string; role: string; bio: string; photoUrl: string; instagram: string };
 
 export type ServiceCategory = "Cut" | "Color" | "Blonding" | "Styling";
 

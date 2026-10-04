@@ -1,6 +1,8 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import Studio from "@/components/Studio";
+import TeamSection from "@/components/TeamSection";
+import StylistSection from "@/components/StylistSection";
 import Dock from "@/components/Dock";
 import { getContent } from "@/lib/content";
 
@@ -13,6 +15,8 @@ export default async function Home() {
       <Header />
       <main>
         <Hero />
+        <TeamSection />
+        <StylistSection />
         <Studio />
       </main>
       <footer className="border-t border-line px-4 pt-10 pb-32 text-center text-xs text-muted sm:px-8">

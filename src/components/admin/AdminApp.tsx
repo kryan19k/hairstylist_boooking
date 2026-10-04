@@ -16,6 +16,7 @@ const tabs = [
   ["bookings", "Bookings"],
   ["services", "Services"],
   ["addons", "Add-ons"],
+  ["team", "Team"],
   ["looks", "Portfolio"],
   ["reviews", "Reviews"],
   ["faqs", "FAQ"],
@@ -47,6 +48,13 @@ const lookFields: FieldDef[] = [
   { key: "hours", label: "Time in chair (label)", type: "text", hint: "e.g. 3.5 hrs" },
   { key: "kind", label: "Placeholder art style", type: "select", options: ["straight", "wave", "curl", "bob"], hint: "Only used when no photo is uploaded." },
   { key: "palette", label: "Palette (placeholder art)", type: "palette" },
+];
+const teamFields: FieldDef[] = [
+  { key: "photo_url", label: "Photo", type: "image" },
+  { key: "name", label: "Name", type: "text" },
+  { key: "role", label: "Role", type: "text", hint: "e.g. Color specialist" },
+  { key: "bio", label: "Short bio", type: "textarea" },
+  { key: "instagram", label: "Instagram handle", type: "text", hint: "without the @" },
 ];
 const reviewFields: FieldDef[] = [
   { key: "name", label: "Client name", type: "text" },
@@ -203,6 +211,10 @@ export default function AdminApp() {
           {tab === "addons" && (
             <Crud key="addons" table="addons" title="Add-ons" blurb="Optional extras clients can tack onto a service." fields={addonFields} idMode="slug" titleKey="name"
               subtitle={(r) => `+$${r.price} · +${r.minutes} min`} blank={{ name: "", blurb: "", price: 30, minutes: 15, active: true }} />
+          )}
+          {tab === "team" && (
+            <Crud key="team" table="team" title="Team" blurb="People shown in “Meet the team” under the homepage banner. If this is empty, the owner card is shown automatically." fields={teamFields} idMode="uuid" titleKey="name"
+              subtitle={(r) => String(r.role)} blank={{ name: "", role: "", bio: "", photo_url: null, instagram: "", active: true }} />
           )}
           {tab === "looks" && (
             <Crud key="looks" table="looks" title="Portfolio" blurb="Upload your best work. Add a “before” photo to turn on the before/after slider." fields={lookFields} idMode="slug" titleKey="title"

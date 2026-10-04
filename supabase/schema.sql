@@ -96,6 +96,17 @@ create table if not exists public.faqs (
   active boolean not null default true
 );
 
+create table if not exists public.team (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  role text not null default '',
+  bio text not null default '',
+  photo_url text,
+  instagram text not null default '',
+  sort int not null default 0,
+  active boolean not null default true
+);
+
 create table if not exists public.bookings (
   id uuid primary key default gen_random_uuid(),
   ref text not null unique,
@@ -124,7 +135,7 @@ create unique index if not exists bookings_slot_unique on public.bookings (date,
 do $$
 declare t text;
 begin
-  foreach t in array array['services','addons','looks','reviews','faqs'] loop
+  foreach t in array array['services','addons','looks','reviews','faqs','team'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "public read" on public.%I', t);
     execute format('create policy "public read" on public.%I for select to anon, authenticated using (active or public.is_admin())', t);

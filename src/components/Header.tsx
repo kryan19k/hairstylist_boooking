@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, useScroll, useTransform } from "motion/react";
 import { goTab } from "@/lib/tabs";
 import { useContent } from "./ContentProvider";
@@ -19,6 +21,7 @@ function nextLabel(opts: Parameters<typeof nextAvailable>[2]) {
 
 export default function Header() {
   const { settings: site } = useContent();
+  const home = usePathname() === "/";
   const opts = useSlotOpts();
   const next = useClientValue(() => nextLabel(opts), "");
   const { scrollY } = useScroll();
@@ -27,15 +30,16 @@ export default function Header() {
     <header className="fixed inset-x-0 top-0 z-40">
       <motion.div aria-hidden style={{ opacity: bg }} className="glass absolute inset-0 border-x-0 border-t-0" />
       <div className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-8">
-        <a
-          href="#"
-          onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+        <Link
+          href="/"
+          onClick={(e) => { if (home) { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); } }}
           className="flex items-baseline gap-2"
         >
           <span className="font-display text-2xl font-medium tracking-tight">{site.name}</span>
           <span className="hidden text-[0.65rem] tracking-[0.3em] text-muted uppercase sm:inline">{site.tagline}</span>
-        </a>
+        </Link>
         <div className="flex items-center gap-3 sm:gap-6">
+          <Link href="/portfolio" className="hidden text-sm text-cream/80 transition hover:text-accent lg:block">Portfolio</Link>
           <div className="hidden md:block"><ShadeSwitcher /></div>
           <ThemeToggle />
           {next && (

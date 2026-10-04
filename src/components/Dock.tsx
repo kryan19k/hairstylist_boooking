@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { motion } from "motion/react";
 import { goTab, tabs, useTab } from "@/lib/tabs";
 
@@ -37,6 +38,7 @@ export default function Dock() {
             </button>
           );
         })}
+        <Link href="/portfolio" className="rounded-full px-4 py-2.5 text-sm font-medium text-cream/70 transition-colors hover:text-cream sm:px-6">Portfolio</Link>
       </div>
     </motion.nav>
   );

@@ -1,7 +1,8 @@
 "use client";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
-import StrandField from "./StrandField";
+import Link from "next/link";
+import HairField from "./HairField";
 import ShadeSwitcher from "./ShadeSwitcher";
 import { goTab } from "@/lib/tabs";
 import { useContent } from "./ContentProvider";
@@ -22,7 +23,7 @@ export default function Hero() {
   return (
     <section id="hero" ref={ref} className="relative isolate flex min-h-[100svh] flex-col justify-end overflow-hidden pt-28 pb-24">
       <motion.div style={{ y }} className="absolute inset-0 -z-10">
-        <StrandField />
+        <HairField />
         <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_20%_55%,transparent,var(--ink)_95%)]" />
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-ink to-transparent" />
       </motion.div>
@@ -68,7 +69,7 @@ export default function Hero() {
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <button onClick={() => goTab("book")} className="btn-accent rounded-full px-7 py-3.5">Reserve your chair</button>
-              <button onClick={() => goTab("work")} className="btn-ghost rounded-full px-7 py-3.5">See the work</button>
+              <Link href="/portfolio" className="btn-ghost rounded-full px-7 py-3.5">See the work</Link>
             </div>
           </div>
           <div className="glass flex items-center gap-5 self-start rounded-2xl px-5 py-4 lg:self-auto">

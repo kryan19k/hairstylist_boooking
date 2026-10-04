@@ -1,14 +1,13 @@
 "use client";
+import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { useTab, tabs } from "@/lib/tabs";
-import WorkPanel from "./panels/WorkPanel";
+import { useTab, tabs, goTab, type TabId } from "@/lib/tabs";
 import ServicesPanel from "./panels/ServicesPanel";
 import BookPanel from "./panels/BookPanel";
 import StoriesPanel from "./panels/StoriesPanel";
 import StudioPanel from "./panels/StudioPanel";
 
 const titles = {
-  work: ["The Portfolio", "Look books, not lookalikes."],
   services: ["The Menu", "Priced plainly. Timed honestly."],
   book: ["Reserve", "Choose your service, then your moment."],
   stories: ["Stories", "In their words."],
@@ -17,6 +16,11 @@ const titles = {
 
 export default function Studio() {
   const tab = useTab();
+  // Arriving from another page via /#book etc.: scroll the panel into view once.
+  useEffect(() => {
+    const h = window.location.hash.replace("#", "") as TabId;
+    if (tabs.some((t) => t.id === h)) setTimeout(() => goTab(h), 150);
+  }, []);
   const [kicker, title] = titles[tab];
   return (
     <section id="studio-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="relative mx-auto max-w-7xl scroll-mt-24 px-4 pt-16 pb-40 sm:px-8">
@@ -36,7 +40,6 @@ export default function Studio() {
               <h2 className="font-display mt-3 text-4xl font-light sm:text-6xl">{title}</h2>
             </div>
           </div>
-          {tab === "work" && <WorkPanel />}
           {tab === "services" && <ServicesPanel />}
           {tab === "book" && <BookPanel />}
           {tab === "stories" && <StoriesPanel />}
