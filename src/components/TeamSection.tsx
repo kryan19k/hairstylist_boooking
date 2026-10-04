@@ -24,8 +24,8 @@ export default function TeamSection() {
     : [{ id: "owner", name: s.stylist, role: "Owner & lead stylist", bio: `Founder of ${s.name} ${s.tagline}. Color, cuts and styling in ${s.city}.`, photoUrl: s.portraitUrl, instagram: s.instagram }];
 
   return (
-    <section aria-labelledby="team-title" className="relative mx-auto max-w-7xl px-4 pt-24 pb-8 sm:px-8">
-      <div className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <section aria-labelledby="team-title" className="relative mx-auto max-w-7xl px-4 pt-16 pb-4 sm:px-8 sm:pt-24 sm:pb-8">
+      <div className="mb-8 flex flex-col sm:mb-12 gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs tracking-[0.3em] text-accent uppercase">The people</p>
           <h2 id="team-title" className="font-display mt-3 text-5xl font-light sm:text-6xl">Meet the <span className="text-shade italic">team</span></h2>
@@ -41,11 +41,11 @@ export default function TeamSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ delay: i * 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="group"
+            className="group mx-auto w-full max-w-[17rem] sm:max-w-none"
           >
             <div className="relative">
               <div className="absolute inset-0 translate-x-3 translate-y-3 rounded-t-[999px] rounded-b-3xl border border-accent/40 transition group-hover:translate-x-4 group-hover:translate-y-4" />
-              <Portrait name={m.name} src={m.photoUrl} className="relative aspect-[4/5] rounded-t-[999px] rounded-b-3xl" />
+              <Portrait name={m.name} src={m.photoUrl} className="relative aspect-[4/4.6] rounded-t-[999px] rounded-b-3xl sm:aspect-[4/5]" />
             </div>
             <h3 className="font-display mt-6 text-3xl font-light">{m.name}</h3>
             <p className="mt-1 text-xs tracking-[0.25em] text-accent uppercase">{m.role}</p>

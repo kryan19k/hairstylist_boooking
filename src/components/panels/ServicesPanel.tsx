@@ -92,10 +92,13 @@ export default function ServicesPanel() {
             return (
               <motion.li key={s.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }} className="border-b border-line">
                 <button onClick={() => setOpen(isOpen ? null : s.id)} aria-expanded={isOpen} className="group flex w-full items-baseline gap-3 py-5 text-left">
-                  <span className="font-display text-xl transition-colors group-hover:text-accent sm:text-2xl">{s.name}</span>
-                  <span className="mb-1 min-w-4 flex-1 translate-y-[-3px] border-b border-dotted border-cream/20" />
-                  <span className="text-sm text-muted">{formatDuration(s.minutes)}</span>
-                  <span className="font-display w-20 text-right text-xl text-accent2">${s.price}+</span>
+                  <span className="min-w-0 flex-1 sm:flex-none">
+                    <span className="font-display block text-xl transition-colors group-hover:text-accent sm:inline sm:text-2xl">{s.name}</span>
+                    <span className="mt-0.5 block text-xs text-muted sm:hidden">{formatDuration(s.minutes)}</span>
+                  </span>
+                  <span className="mb-1 hidden min-w-4 flex-1 translate-y-[-3px] border-b border-dotted border-cream/20 sm:block" />
+                  <span className="hidden text-sm text-muted sm:inline">{formatDuration(s.minutes)}</span>
+                  <span className="font-display w-auto shrink-0 text-right text-xl text-accent2 sm:w-20">${s.price}+</span>
                 </button>
                 <AnimatePresence initial={false}>
                   {isOpen && (

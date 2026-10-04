@@ -25,7 +25,7 @@ export default function ShadeSwitcher({ labelled = false }: { labelled?: boolean
           </button>
         ))}
       </div>
-      {labelled && <span className="w-16 text-xs tracking-[0.2em] text-muted uppercase">{active.name}</span>}
+      {labelled && <span className="hidden w-16 text-xs tracking-[0.2em] text-muted uppercase sm:block">{active.name}</span>}
     </div>
   );
 }

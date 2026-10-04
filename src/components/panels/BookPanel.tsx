@@ -302,7 +302,17 @@ function BookFlow({ live }: { live: Busy[] }) {
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
       <div className="min-w-0">
-        <ol className="mb-10 flex items-center gap-3" aria-label="Progress">
+        {/* phones: a slim running total instead of the full receipt below the form */}
+        {summary.service && (
+          <div className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-line bg-ink-2 px-4 py-3 text-sm lg:hidden">
+            <span className="min-w-0 truncate">
+              <span className="font-medium">{summary.service.name}</span>
+              <span className="text-muted">{date && time ? ` · ${parseDateKey(date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}, ${formatTime(time)}` : ` · ${formatDuration(summary.minutes)}`}</span>
+            </span>
+            <span className="font-display shrink-0 text-xl text-accent2">${summary.total}</span>
+          </div>
+        )}
+        <ol className="mb-8 flex items-center gap-3 sm:mb-10" aria-label="Progress">
           {steps.map((s, i) => (
             <li key={s} className="flex flex-1 items-center gap-3 last:flex-none">
               <button
@@ -332,7 +342,7 @@ function BookFlow({ live }: { live: Busy[] }) {
           </motion.div>
         </AnimatePresence>
       </div>
-      <aside className="lg:sticky lg:top-24 lg:self-start"><Ticket summary={summary} opts={opts} /></aside>
+      <aside className={`lg:sticky lg:top-24 lg:self-start ${step === 2 ? "" : "hidden lg:block"}`}><Ticket summary={summary} opts={opts} /></aside>
     </div>
   );
 }

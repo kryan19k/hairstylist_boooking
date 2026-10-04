@@ -21,8 +21,8 @@ export default function Hero() {
   const open = useClientValue(() => openNowLabel(new Date(), site.hours), "");
 
   return (
-    <section id="hero" ref={ref} className="relative isolate flex min-h-[100svh] flex-col justify-end overflow-hidden pt-28 pb-24">
-      <motion.div style={{ y }} className="absolute inset-0 -z-10">
+    <section id="hero" ref={ref} className="relative isolate flex min-h-[100svh] flex-col justify-end overflow-hidden pt-[36svh] pb-24 sm:pt-28">
+      <motion.div style={{ y }} className="absolute inset-x-0 top-0 -z-10 h-[48svh] sm:inset-0 sm:h-auto">
         <HairField />
         <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_20%_55%,transparent,var(--ink)_95%)]" />
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-ink to-transparent" />
@@ -31,10 +31,10 @@ export default function Hero() {
       <motion.div style={{ opacity: fade }} className="mx-auto w-full max-w-7xl px-4 sm:px-8">
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="mb-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs tracking-[0.22em] text-muted uppercase"
+          className="mb-4 flex flex-wrap items-center gap-x-5 sm:mb-6 gap-y-2 text-xs tracking-[0.22em] text-muted uppercase"
         >
           <span>{site.city}</span>
-          <span className="h-px w-8 bg-line" />
+          <span className="hidden h-px w-8 bg-line sm:block" />
           <span>by {site.stylist}</span>
           {open && (
             <>
@@ -61,21 +61,21 @@ export default function Hero() {
 
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 0.8 }}
-          className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
+          className="mt-5 flex flex-col gap-6 sm:mt-8 sm:gap-8 lg:flex-row lg:items-end lg:justify-between"
         >
           <div className="max-w-md">
-            <p className="text-lg leading-relaxed text-cream/80">
+            <p className="text-base leading-relaxed text-cream/80 sm:text-lg">
               {site.heroBlurb}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <button onClick={() => goTab("book")} className="btn-accent rounded-full px-7 py-3.5">Reserve your chair</button>
-              <Link href="/portfolio" className="btn-ghost rounded-full px-7 py-3.5">See the work</Link>
+              <button onClick={() => goTab("book")} className="btn-accent rounded-full px-5 py-3 text-sm sm:px-7 sm:py-3.5 sm:text-base">Reserve your chair</button>
+              <Link href="/portfolio" className="btn-ghost rounded-full px-5 py-3 text-sm sm:px-7 sm:py-3.5 sm:text-base">See the work</Link>
             </div>
           </div>
-          <div className="glass flex items-center gap-5 self-start rounded-2xl px-5 py-4 lg:self-auto">
+          <div className="glass flex w-full items-center justify-between gap-4 self-start rounded-2xl px-4 py-3 sm:w-auto sm:gap-5 sm:px-5 sm:py-4 lg:self-auto">
             <div>
               <p className="text-[0.65rem] tracking-[0.25em] text-muted uppercase">Try a shade</p>
-              <p className="mt-1 text-sm text-cream/70">Tap one. The whole studio recolors.</p>
+              <p className="mt-1 hidden text-sm text-cream/70 sm:block">Tap one. The whole studio recolors.</p>
             </div>
             <ShadeSwitcher labelled />
           </div>

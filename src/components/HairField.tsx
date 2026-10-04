@@ -10,6 +10,8 @@ type Uniforms = {
   uRes: { value: ThreeNS.Vector2 };
   uMouse: { value: ThreeNS.Vector2 };
   uLight: { value: number };
+  uScale: { value: number };
+  uBoost: { value: number };
   uC1: { value: ThreeNS.Color };
   uC2: { value: ThreeNS.Color };
   uC3: { value: ThreeNS.Color };
@@ -21,6 +23,8 @@ const VERT = /* glsl */ `
 uniform float uTime;
 uniform vec2 uRes;
 uniform vec2 uMouse;
+uniform float uScale; // >1 on phones: more waves per screen width
+uniform float uBoost; // thicker/brighter lines on phones
 attribute float aT;
 attribute vec4 aA; // rootY, wavePhase, waveAmp, waveFreq
 attribute vec4 aB; // speed, ripplePitch, rippleRadius, jitterY
@@ -37,12 +41,12 @@ void main() {
   float fan = 0.12 + 0.88 * pow(t, 0.8);
   float y = H * 0.5 + aA.x * H * 0.34 * fan + aB.w * t;
   // body: neighbouring locks share phase, so the hair moves as one flowing sheet of waves
-  float ph = x * aA.w - uTime * aB.x + aA.y;
+  float ph = x * aA.w * uScale - uTime * aB.x + aA.y;
   y += sin(ph) * aA.z * t;
   y += sin(ph * 0.5 + 1.3 + aC.x) * aA.z * 0.45 * t;
   y += sin(x * 0.0006 - uTime * 0.18 + aA.x * 1.5) * 50.0 * t;
   // fine ripple only: just enough irregularity to feel like hair, not curls
-  float th = x / aB.y * 6.2831853 + aC.y + uTime * 0.25;
+  float th = x * uScale / aB.y * 6.2831853 + aC.y + uTime * 0.25;
   y += cos(th) * aB.z * (0.3 + 0.9 * smoothstep(0.1, 0.9, t));
   float xx = x;
   // the cursor combs the hair apart
@@ -54,7 +58,7 @@ void main() {
   // soft light bands that travel along the waves, like light rolling over real hair
   vLit = 0.5 + 0.5 * sin(ph + 0.9);
   vT = t;
-  vAlpha = aC.z * smoothstep(0.0, 0.1, t) * (1.0 - smoothstep(0.88, 1.0, t));
+  vAlpha = aC.z * uBoost * smoothstep(0.0, 0.1, t) * (1.0 - smoothstep(0.88, 1.0, t));
   vMix = aC.w;
 }`;
 
@@ -182,6 +186,8 @@ export default function HairField() {
           uRes: { value: new THREE.Vector2(1, 1) },
           uMouse: { value: new THREE.Vector2(-9999, -9999) },
           uLight: { value: 0 },
+          uScale: { value: 1 },
+          uBoost: { value: 1 },
           uC1: { value: new THREE.Color() },
           uC2: { value: new THREE.Color() },
           uC3: { value: new THREE.Color() },
@@ -204,6 +210,9 @@ export default function HairField() {
           renderer.setSize(w, h, false);
           camera.right = w; camera.top = h; camera.updateProjectionMatrix();
           u.uRes.value.set(w, h);
+          const phone = w < 760;
+          u.uScale.value = phone ? 2.1 : 1;
+          u.uBoost.value = phone ? 1.7 : 1;
         };
         resize();
 
