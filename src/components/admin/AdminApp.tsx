@@ -9,6 +9,7 @@ import { defaultSettings, mergeSettings } from "@/lib/site";
 import { Btn, Field, inputCls, Notice } from "./ui";
 import Crud, { ES_SQL, type FieldDef } from "./Crud";
 import BookingsAdmin from "./BookingsAdmin";
+import CalendarAdmin from "./CalendarAdmin";
 import SettingsAdmin from "./SettingsAdmin";
 import ThemeToggle from "../ThemeToggle";
 import LangToggle from "../LangToggle";
@@ -17,6 +18,7 @@ import { useTx } from "@/lib/locale";
 type Gate = "loading" | "signed-out" | "checking" | "owner" | "unclaimed" | "denied" | "no-schema";
 const tabs = [
   ["bookings", "Bookings"],
+  ["calendar", "Calendar"],
   ["services", "Services"],
   ["addons", "Add-ons"],
   ["team", "Team"],
@@ -268,6 +270,7 @@ export default function AdminApp() {
           )}
           {note && <div className="mb-6"><Notice kind={note.kind}>{note.text}</Notice></div>}
           {tab === "bookings" && <BookingsAdmin />}
+          {tab === "calendar" && <CalendarAdmin />}
           {tab === "services" && (
             <Crud key="services" table="services" title="Services" blurb="What clients can book. Price is the “from” price; duration controls how much calendar time it takes." fields={serviceFields} idMode="slug" titleKey="name"
               subtitle={(r) => `${r.category} · $${r.price} · ${r.minutes} min`} blank={{ name: "", category: "Color", blurb: "", price: 100, minutes: 60, deposit: 0, active: true }} />

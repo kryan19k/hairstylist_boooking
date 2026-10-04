@@ -141,6 +141,27 @@ alter table if exists public.team     add column if not exists es jsonb not null
 notify pgrst, 'reload schema';
 
 ------------------------------------------------------------------
+-- Refuse overlapping appointments (not just identical start times)
+------------------------------------------------------------------
+create or replace function public.prevent_booking_overlap() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.status <> 'cancelled' and exists (
+    select 1 from public.bookings b
+    where b.id <> new.id and b.status <> 'cancelled' and b.date = new.date
+      and (b.time::time, b.time::time + make_interval(mins => b.minutes))
+          overlaps (new.time::time, new.time::time + make_interval(mins => new.minutes))
+  ) then
+    raise exception 'That time overlaps another appointment' using errcode = '23505';
+  end if;
+  return new;
+end $$;
+drop trigger if exists bookings_no_overlap on public.bookings;
+create trigger bookings_no_overlap
+  before insert or update of date, time, minutes, status on public.bookings
+  for each row execute function public.prevent_booking_overlap();
+
+------------------------------------------------------------------
 -- Row level security
 ------------------------------------------------------------------
 do $$
