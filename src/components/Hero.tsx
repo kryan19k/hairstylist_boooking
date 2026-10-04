@@ -10,7 +10,7 @@ import { useClientValue } from "@/lib/client-value";
 import { openNowLabel } from "@/lib/availability";
 import { useT, useLocale, intlTag } from "@/lib/locale";
 
-const wordKeys = ["hero.w1", "hero.w2", "hero.w3"];
+const wordKeys = ["hero.w1", "hero.w2", "hero.w3"] as const;
 const marqueeKeys = Array.from({ length: 10 }, (_, i) => `marquee.${i + 1}`);
 
 export default function Hero() {
@@ -21,6 +21,10 @@ export default function Hero() {
   const { settings: site } = useContent();
   const t = useT();
   const tag = intlTag(useLocale());
+  // Owner-editable headline + ticker; blank falls back to the built-in (translated) text.
+  const words = [site.heroWord1 || t(wordKeys[0]), site.heroWord2 || t(wordKeys[1]), site.heroWord3 || t(wordKeys[2])];
+  const custom = site.marquee.split(/[,\n]/).map((x) => x.trim()).filter(Boolean);
+  const ticker = custom.length ? custom : marqueeKeys.map((k) => t(k));
   const open = useClientValue(() => openNowLabel(new Date(), site.hours, t, tag), "");
 
   return (
@@ -48,15 +52,15 @@ export default function Hero() {
         </motion.div>
 
         <h1 className="font-display text-[clamp(3.4rem,11vw,10rem)] leading-[0.9] font-light tracking-tight">
-          {wordKeys.map((k, i) => (
-            <span key={k} className="mr-[0.22em] inline-block overflow-hidden pb-[0.12em] align-bottom">
+          {words.map((word, i) => (
+            <span key={i} className="mr-[0.22em] inline-block overflow-hidden pb-[0.12em] align-bottom">
               <motion.span
                 className={`inline-block ${i === 1 ? "text-shade italic" : ""}`}
                 initial={{ y: "110%", rotate: 4 }}
                 animate={{ y: 0, rotate: 0 }}
                 transition={{ delay: 0.35 + i * 0.12, duration: 1, ease: [0.16, 1, 0.3, 1] }}
               >
-                {t(k)}
+                {word}
               </motion.span>
             </span>
           ))}
@@ -87,9 +91,9 @@ export default function Hero() {
 
       <div className="relative mx-3 mt-12 overflow-hidden rounded-full border border-line bg-ink/40 py-3 backdrop-blur-sm sm:mx-8" aria-hidden>
         <div className="marquee flex w-max gap-10 whitespace-nowrap">
-          {[...marqueeKeys, ...marqueeKeys].map((m, i) => (
+          {[...ticker, ...ticker].map((m, i) => (
             <span key={i} className="flex items-center gap-10 font-display text-lg text-cream/60 italic">
-              {t(m)}<span className="text-accent">✦</span>
+              {m}<span className="text-accent">✦</span>
             </span>
           ))}
         </div>

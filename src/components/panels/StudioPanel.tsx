@@ -6,7 +6,6 @@ import { useContent } from "../ContentProvider";
 import { formatTime, openNowLabel } from "@/lib/availability";
 import { useClientValue } from "@/lib/client-value";
 
-const gifts = [50, 100, 150, 250];
 
 function Hours() {
   const { settings: site } = useContent();
@@ -38,7 +37,9 @@ function Hours() {
 function Gift() {
   const { settings: site } = useContent();
   const t = useT();
-  const [amt, setAmt] = useState(100);
+  const gifts = site.giftAmounts.split(/[,\s]+/).map((x) => Number(x)).filter((n) => n > 0);
+  const [amt, setAmt] = useState(() => gifts[Math.min(1, gifts.length - 1)] ?? 50);
+  if (!site.showGiftCards || gifts.length === 0) return null;
   return (
     <div className="paper relative overflow-hidden rounded-[2.75rem] p-6">
       <div className="pointer-events-none absolute -right-10 -bottom-10 size-48 rounded-full bg-[radial-gradient(circle,var(--accent),transparent_70%)] opacity-50" />
@@ -92,6 +93,8 @@ function Faq() {
 export default function StudioPanel() {
   const { settings: site } = useContent();
   const t = useT();
+  // Owner-edited tips, or the built-in four when none are set.
+  const tips = site.aftercare.length ? site.aftercare : [1, 2, 3, 4].map((n) => ({ t: t(`care.${n}.t`), b: t(`care.${n}.b`) }));
   return (
     <div className="space-y-16">
       <div className="grid gap-6 lg:grid-cols-3">
@@ -114,11 +117,11 @@ export default function StudioPanel() {
       <div>
         <h3 className="font-display text-3xl">{t("info.aftercare")}</h3>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((n, i) => (
-            <motion.div key={n} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} className="rounded-[2rem] border border-line p-5">
-              <span className="font-display text-3xl text-accent">0{n}</span>
-              <p className="mt-2 font-medium">{t(`care.${n}.t`)}</p>
-              <p className="mt-1 text-sm text-cream/65">{t(`care.${n}.b`)}</p>
+          {tips.map((tip, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} className="rounded-[2rem] border border-line p-5">
+              <span className="font-display text-3xl text-accent">{String(i + 1).padStart(2, "0")}</span>
+              <p className="mt-2 font-medium">{tip.t}</p>
+              <p className="mt-1 text-sm text-cream/65">{tip.b}</p>
             </motion.div>
           ))}
         </div>

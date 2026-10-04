@@ -14,6 +14,7 @@ export function pick<T extends WithEs>(item: T, locale: Locale): T {
 export function localizeContent(c: Content, locale: Locale): Content {
   if (locale !== "es") return c;
   const settings = { ...c.settings, ...Object.fromEntries(Object.entries(c.settings.es ?? {}).filter(([, v]) => v && v.trim())) };
+  settings.aftercare = c.settings.aftercare.map((a) => ({ ...a, t: a.tEs?.trim() || a.t, b: a.bEs?.trim() || a.b }));
   return {
     ...c,
     settings,

@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { goTab, tabs, useTab } from "@/lib/tabs";
 import { useT } from "@/lib/locale";
-import { useContent } from "./ContentProvider";
 
 const navKey = { services: "nav.menu", book: "nav.reserve", stories: "nav.stories", studio: "nav.studio" } as const;
 
@@ -14,7 +13,6 @@ export default function Dock() {
   const path = usePathname();
   const onPortfolio = path === "/portfolio";
   const onProducts = path === "/products";
-  const { products } = useContent();
   const tr = useT();
   return (
     <motion.nav
@@ -48,7 +46,7 @@ export default function Dock() {
             </button>
           );
         })}
-        {products.length > 0 && (
+        {(
           <Link
             href="/products"
             aria-current={onProducts ? "page" : undefined}

@@ -23,8 +23,8 @@ export default function StylistSection() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1 }}>
-          <p className="text-xs tracking-[0.3em] text-accent uppercase">{t("stylist.kicker")}</p>
-          <h2 id="stylist-title" className="font-display mt-3 text-4xl font-light sm:text-6xl">{t("stylist.meet")} <span className="text-shade italic">{s.stylist.split(" ")[0]}</span></h2>
+          <p className="text-xs tracking-[0.3em] text-accent uppercase">{s.aboutKicker || t("stylist.kicker")}</p>
+          <h2 id="stylist-title" className="font-display mt-3 text-4xl font-light sm:text-6xl">{s.aboutMeet || t("stylist.meet")} <span className="text-shade italic">{s.stylist.split(" ")[0]}</span></h2>
           <p className="font-display mt-6 text-2xl leading-snug font-light text-cream/90">{s.aboutTitle}</p>
           <p className="mt-4 max-w-xl leading-relaxed text-cream/70">{s.aboutBody}</p>
           <dl className="mt-6 grid grid-cols-3 gap-3 border-y border-line py-5 sm:mt-8 sm:gap-4 sm:py-6">
@@ -36,7 +36,7 @@ export default function StylistSection() {
             ))}
           </dl>
           <div className="mt-8 flex flex-wrap gap-3">
-            <button onClick={() => goTab("book")} className="btn-accent rounded-full px-7 py-3.5">{t("stylist.cta")}</button>
+            <button onClick={() => goTab("book")} className="btn-accent rounded-full px-7 py-3.5">{s.aboutCta || t("stylist.cta")}</button>
             {s.instagram && <a href={`https://instagram.com/${s.instagram}`} target="_blank" rel="noreferrer" className="btn-ghost rounded-full px-7 py-3.5">@{s.instagram}</a>}
           </div>
         </motion.div>

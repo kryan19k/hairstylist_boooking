@@ -10,7 +10,7 @@ export type Row = Record<string, string | number | boolean | string[] | Es | nul
 export type FieldDef = {
   key: string;
   label: string;
-  type: "text" | "textarea" | "number" | "select" | "image" | "palette" | "bool";
+  type: "text" | "textarea" | "number" | "select" | "image" | "palette" | "bool" | "service";
   options?: string[];
   hint?: string;
   wide?: boolean;
@@ -30,6 +30,8 @@ type Props = {
   blank: Row;
   /** Shown (with a copy button) when the table has not been created in Supabase yet. */
   setupSql?: string;
+  /** Optional sample rows offered when the list is empty. */
+  starter?: Row[];
 };
 
 export const ES_SQL = `alter table if exists public.services add column if not exists es jsonb not null default '{}'::jsonb;
@@ -42,7 +44,7 @@ notify pgrst, 'reload schema';`;
 
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "item";
 
-export default function Crud({ table, title, blurb, fields, idMode, titleKey, subtitle, blank, setupSql }: Props) {
+export default function Crud({ table, title, blurb, fields, idMode, titleKey, subtitle, blank, setupSql, starter }: Props) {
   const db = browserClient();
   const tx = useTx();
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -52,6 +54,7 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
   const [busy, setBusy] = useState(false);
   const [missing, setMissing] = useState(false);
   const [needEs, setNeedEs] = useState(false);
+  const [svc, setSvc] = useState<{ id: string; name: string }[]>([]);
   const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
@@ -65,6 +68,24 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch
     load();
   }, [load]);
+
+  // services list for "service" picker fields (portfolio → which service "Book this look" preselects)
+  const wantsSvc = fields.some((f) => f.type === "service");
+  useEffect(() => {
+    if (!wantsSvc) return;
+    browserClient().from("services").select("id,name").order("sort", { ascending: true }).then(({ data }) => setSvc((data as { id: string; name: string }[]) ?? []));
+  }, [wantsSvc]);
+
+  const loadStarter = async () => {
+    setBusy(true);
+    const rowsToAdd = (starter ?? []).map((r, i) => ({ ...r, id: slugify(String(r[titleKey] ?? `item-${i}`)), sort: i + 1, active: true }));
+    const { error } = await db.from(table).upsert(rowsToAdd);
+    setBusy(false);
+    if (error) return setMsg({ kind: "error", text: error.message });
+    setMsg({ kind: "ok", text: tx("Sample items added. Edit or delete them any time.") });
+    await revalidateSite();
+    await load();
+  };
 
   const patch = (id: string, p: Row) => setRows((rs) => rs!.map((r) => (r.id === id ? { ...r, ...p } : r)));
 
@@ -161,7 +182,10 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
       {!rows ? (
         <p className="text-muted">{tx("Loading…")}</p>
       ) : rows.length === 0 ? (
-        <Notice kind="info">Nothing here yet. Click “Add new”.</Notice>
+        <div className="space-y-3">
+          <Notice kind="info">Nothing here yet. Click “Add new”.</Notice>
+          {starter && <Btn onClick={loadStarter} disabled={busy}>Add sample items</Btn>}
+        </div>
       ) : (
         <ul className="space-y-3">
           {rows.map((row, i) => {
@@ -190,6 +214,15 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
                       const v = row[f.key];
                       const span = f.wide || f.type === "textarea" || f.type === "image" || f.type === "palette" ? "sm:col-span-2" : "";
                       if (f.type === "image") return <div key={f.key} className={span}><ImageField label={f.label} value={(v as string) || null} onChange={(u) => patch(id, { [f.key]: u })} /></div>;
+                      if (f.type === "service")
+                        return (
+                          <Field key={f.key} label={f.label} hint={f.hint} className={span}>
+                            <select className={inputCls} value={String(v ?? "")} onChange={(e) => patch(id, { [f.key]: e.target.value })}>
+                              <option value="">{tx("— none —")}</option>
+                              {svc.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                            </select>
+                          </Field>
+                        );
                       if (f.type === "bool")
                         return (
                           <label key={f.key} className={`flex items-center gap-3 text-sm ${span}`}>

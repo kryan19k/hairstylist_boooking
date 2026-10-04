@@ -22,7 +22,7 @@ function nextLabel(opts: Parameters<typeof nextAvailable>[2], t: TFn, tag: strin
 }
 
 export default function Header() {
-  const { settings: site, products } = useContent();
+  const { settings: site } = useContent();
   const home = usePathname() === "/";
   const opts = useSlotOpts();
   const t = useT();
@@ -46,7 +46,7 @@ export default function Header() {
         </Link>
         <div className="flex items-center gap-3 sm:gap-6">
           <Link href="/portfolio" className="hidden text-sm text-cream/80 transition hover:text-accent lg:block">{t("nav.portfolio")}</Link>
-          {products.length > 0 && <Link href="/products" className="hidden text-sm text-cream/80 transition hover:text-accent lg:block">{t("nav.products")}</Link>}
+          {<Link href="/products" className="hidden text-sm text-cream/80 transition hover:text-accent lg:block">{t("nav.products")}</Link>}
           <div className="hidden md:block"><ShadeSwitcher /></div>
           <LangToggle />
           <ThemeToggle />

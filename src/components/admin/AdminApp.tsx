@@ -21,12 +21,14 @@ const tabs = [
   ["calendar", "Calendar"],
   ["services", "Services"],
   ["addons", "Add-ons"],
-  ["team", "Team"],
   ["looks", "Portfolio"],
   ["products", "Products"],
   ["reviews", "Reviews"],
   ["faqs", "FAQ"],
-  ["settings", "Studio & site"],
+  ["profile", "Stylist profile"],
+  ["team", "Team"],
+  ["text", "Page text"],
+  ["settings", "Salon & contact"],
 ] as const;
 type Tab = (typeof tabs)[number][0];
 
@@ -49,7 +51,7 @@ const lookFields: FieldDef[] = [
   { key: "before_url", label: "Before photo (optional, enables the slider)", type: "image" },
   { key: "title", label: "Title", type: "text", tr: true },
   { key: "category", label: "Category", type: "select", options: lookCategories.filter((c) => c !== "All") },
-  { key: "service_id", label: "Linked service id", type: "text", hint: "The “Book this look” button preselects this service. Copy an id from the Services tab URL list, e.g. blonde-balayage." },
+  { key: "service_id", label: "Service for this look", type: "service", hint: "The “Book this look” button on the portfolio preselects this service." },
   { key: "story", label: "Story", type: "textarea", tr: true },
   { key: "hours", label: "Time in chair (label)", type: "text", hint: "e.g. 3.5 hrs", tr: true },
   { key: "kind", label: "Placeholder art style", type: "select", options: ["straight", "wave", "curl", "bob"], hint: "Only used when no photo is uploaded." },
@@ -303,33 +305,43 @@ export default function AdminApp() {
           {tab === "bookings" && <BookingsAdmin />}
           {tab === "calendar" && <CalendarAdmin />}
           {tab === "services" && (
-            <Crud key="services" table="services" title="Services" blurb="What clients can book. Price is the “from” price; duration controls how much calendar time it takes." fields={serviceFields} idMode="slug" titleKey="name"
+            <Crud key="services" table="services" title="Services" blurb="Shown on the homepage → Menu tab and in booking. Price is the “from” price; duration controls how much calendar time it takes." fields={serviceFields} idMode="slug" titleKey="name"
               subtitle={(r) => `${r.category} · $${r.price} · ${r.minutes} min`} blank={{ name: "", category: "Color", blurb: "", price: 100, minutes: 60, deposit: 0, active: true }} />
           )}
           {tab === "addons" && (
-            <Crud key="addons" table="addons" title="Add-ons" blurb="Optional extras clients can tack onto a service." fields={addonFields} idMode="slug" titleKey="name"
+            <Crud key="addons" table="addons" title="Add-ons" blurb="Shown on the Menu tab and offered during booking. Optional extras clients can add to a service." fields={addonFields} idMode="slug" titleKey="name"
               subtitle={(r) => `+$${r.price} · +${r.minutes} min`} blank={{ name: "", blurb: "", price: 30, minutes: 15, active: true }} />
           )}
           {tab === "team" && (
-            <Crud key="team" table="team" title="Team" blurb="People shown in “Meet the team” under the homepage banner. If this is empty, the owner card is shown automatically." fields={teamFields} idMode="uuid" titleKey="name"
+            <Crud key="team" table="team" title="Team" blurb="Your employees, shown in “Meet the team” underneath your own profile on the homepage (photo, name, role, bio). Until you add someone, that section is hidden." fields={teamFields} idMode="uuid" titleKey="name"
               subtitle={(r) => String(r.role)} blank={{ name: "", role: "", bio: "", photo_url: null, instagram: "", active: true }} setupSql={TEAM_SQL} />
           )}
           {tab === "products" && (
             <Crud key="products" table="products" title="Products" blurb="Shown on the Products page: eyelash extensions, shampoo, treatments and anything else you sell. Add a photo, price and description." fields={productFields} idMode="slug" titleKey="name"
-              subtitle={(r) => `${r.category}${Number(r.price) ? ` · $${r.price}` : ""}${r.in_stock === false ? " · sold out" : ""}`} blank={{ name: "", category: "Hair care", blurb: "", price: 0, link: "", in_stock: true, image_url: null, active: true }} setupSql={PRODUCTS_SQL} />
+              subtitle={(r) => `${r.category}${Number(r.price) ? ` · $${r.price}` : ""}${r.in_stock === false ? " · sold out" : ""}`} blank={{ name: "", category: "Hair care", blurb: "", price: 0, link: "", in_stock: true, image_url: null, active: true }} setupSql={PRODUCTS_SQL}
+              starter={[
+                { name: "Classic Lash Extensions", category: "Eyelash extensions", blurb: "Natural, wispy length for everyday wear.", price: 120, link: "", in_stock: true, image_url: null, es: {"name": "Extensiones de pestañas clásicas", "blurb": "Largo natural y ligero para todos los días."} },
+                { name: "Volume Lash Extensions", category: "Eyelash extensions", blurb: "Fuller, fluffier lashes with a soft dramatic look.", price: 160, link: "", in_stock: true, image_url: null, es: {"name": "Extensiones de pestañas de volumen", "blurb": "Pestañas más llenas y esponjosas con un look suave y dramático."} },
+                { name: "Lash Serum", category: "Eyelash extensions", blurb: "Nightly conditioning serum for stronger, longer-looking lashes.", price: 38, link: "", in_stock: true, image_url: null, es: {"name": "Sérum de pestañas", "blurb": "Sérum acondicionador nocturno para pestañas más fuertes y largas."} },
+                { name: "Hydrating Shampoo", category: "Shampoo & conditioner", blurb: "Gentle, color-safe cleanse that keeps hair soft and shiny.", price: 28, link: "", in_stock: true, image_url: null, es: {"name": "Champú hidratante", "blurb": "Limpieza suave que protege el color y mantiene el cabello suave y brillante."} },
+                { name: "Moisture Conditioner", category: "Shampoo & conditioner", blurb: "Silky conditioner for smooth, detangled hair.", price: 30, link: "", in_stock: true, image_url: null, es: {"name": "Acondicionador de humectación", "blurb": "Acondicionador sedoso para un cabello suave y sin enredos."} },
+                { name: "Repair Hair Mask", category: "Treatments", blurb: "Weekly mask that restores strength and shine.", price: 34, link: "", in_stock: true, image_url: null, es: {"name": "Mascarilla reparadora", "blurb": "Mascarilla semanal que devuelve fuerza y brillo."} },
+              ]} />
           )}
           {tab === "looks" && (
-            <Crud key="looks" table="looks" title="Portfolio" blurb="Upload your best work. Add a “before” photo to turn on the before/after slider." fields={lookFields} idMode="slug" titleKey="title"
+            <Crud key="looks" table="looks" title="Portfolio" blurb="Shown on the Portfolio page. Upload your best work (photos), and add a “before” photo to turn on the before/after slider." fields={lookFields} idMode="slug" titleKey="title"
               subtitle={(r) => String(r.category)} blank={{ title: "", category: "Color", kind: "straight", palette: ["#3a2418", "#b98a5e", "#f1dcc0"], service_id: "", story: "", hours: "", seed: 1, image_url: null, before_url: null, active: true }} />
           )}
           {tab === "reviews" && (
-            <Crud key="reviews" table="reviews" title="Reviews" blurb="Client words on the Stories tab. Only add real reviews you have permission to share." fields={reviewFields} idMode="uuid" titleKey="name"
+            <Crud key="reviews" table="reviews" title="Reviews" blurb="Shown on the homepage → Stories tab. Only add real reviews you have permission to share." fields={reviewFields} idMode="uuid" titleKey="name"
               subtitle={(r) => `${"★".repeat(Number(r.stars) || 0)} ${r.service}`} blank={{ name: "", service: "", quote: "", stars: 5, active: true }} />
           )}
           {tab === "faqs" && (
-            <Crud key="faqs" table="faqs" title="FAQ" blurb="Questions shown on the Studio tab." fields={faqFields} idMode="uuid" titleKey="q" blank={{ q: "", a: "", active: true }} />
+            <Crud key="faqs" table="faqs" title="FAQ" blurb="Shown on the homepage → Studio tab." fields={faqFields} idMode="uuid" titleKey="q" blank={{ q: "", a: "", active: true }} />
           )}
-          {tab === "settings" && <SettingsAdmin />}
+          {tab === "profile" && <SettingsAdmin key="profile" section="profile" />}
+          {tab === "text" && <SettingsAdmin key="text" section="text" />}
+          {tab === "settings" && <SettingsAdmin key="shop" section="shop" />}
         </div>
       </div>
     </Shell>

@@ -9,6 +9,7 @@ type Uniforms = {
   uTime: { value: number };
   uRes: { value: ThreeNS.Vector2 };
   uMouse: { value: ThreeNS.Vector2 };
+  uCut: { value: ThreeNS.Vector4[] }; // x, y, half-height, start time (-1 = unused)
   uLight: { value: number };
   uScale: { value: number };
   uBoost: { value: number };
@@ -23,6 +24,7 @@ const VERT = /* glsl */ `
 uniform float uTime;
 uniform vec2 uRes;
 uniform vec2 uMouse;
+uniform vec4 uCut[4]; // snips: x, y, half-height, start time (-1 = unused)
 uniform float uScale; // >1 on phones: more waves per screen width
 uniform float uBoost; // thicker/brighter lines on phones
 attribute float aT;
@@ -33,8 +35,9 @@ varying float vAlpha;
 varying float vMix;
 varying float vLit;
 varying float vT;
-void main() {
-  float t = aT;
+varying float vSev;
+// The hair's body line (before cuts and cursor): y as a function of the position along the strand.
+float bodyY(float t) {
   float W = uRes.x;
   float H = uRes.y;
   float x = mix(-0.04 * W, 1.06 * W, t);
@@ -48,10 +51,53 @@ void main() {
   // fine ripple only: just enough irregularity to feel like hair, not curls
   float th = x * uScale / aB.y * 6.2831853 + aC.y + uTime * 0.25;
   y += cos(th) * aB.z * (0.3 + 0.9 * smoothstep(0.1, 0.9, t));
+  return y;
+}
+void main() {
+  float t = aT;
+  float W = uRes.x;
+  float x0 = -0.04 * W;
+  float span = 1.1 * W;
+  float x = x0 + span * t;
+  float y = bodyY(t);
+  float ph = x * aA.w * uScale - uTime * aB.x + aA.y; // used for the light bands
   float xx = x;
-  // the cursor combs the hair apart
-  // the scissors open a soft channel ALONG the hair (wide in x, narrow in y). The push is a smooth
-  // function of the distance from the cursor line, so there is no hard seam or vertical streaks.
+  float keep = 1.0;
+  float sev = 0.0; // 1 for the free, severed end of a strand
+  // Snips: strands whose line passes through the cut band are severed at a slightly different spot
+  // each. The free end bends and swings down around the cut and falls away (fading out); the stub
+  // then slowly grows back. Severed points are flagged so the segment that would bridge the cut is
+  // never drawn (that bridge is what made vertical "pillars").
+  for (int k = 0; k < 4; k++) {
+    vec4 c = uCut[k];
+    if (c.w < 0.0) continue;
+    float age = uTime - c.w;
+    if (age < 0.0) continue;
+    float cx = c.x + 85.0 * age;
+    float tc = (cx - x0) / span;
+    if (tc >= 1.0) continue;
+    float yc = bodyY(max(tc, 0.0));
+    float band = 1.0 - smoothstep(c.z * 0.55, c.z, abs(yc - c.y));
+    float jitter = (fract(aC.y * 13.0) - 0.5) * 44.0;     // every strand is cut at its own spot
+    float cutX = cx + (yc - c.y) * 0.3 + jitter;           // on a slight slant
+    if (band > 0.02 && x > cutX) {
+      sev = 1.0;
+      float rx = x - cutX;
+      float k2 = 0.7 + 0.6 * fract(aC.y * 7.0);
+      float bendF = 0.35 + 0.65 * clamp(rx / 700.0, 0.0, 1.0);  // the further from the cut, the more it droops
+      float ang = -(0.12 + 0.95 * age) * band * k2 * bendF;
+      vec2 rel = vec2(rx, y - yc);
+      float cs = cos(ang);
+      float sn = sin(ang);
+      float a2 = min(age, 2.4);
+      float g = 380.0 + 260.0 * fract(aC.y * 5.0);          // strands fall at slightly different speeds
+      float sway = sin(age * 3.0 + aC.y * 20.0) * 14.0 * band * min(age, 1.0);
+      xx = cutX + rel.x * cs - rel.y * sn + sway;
+      y = yc + rel.x * sn + rel.y * cs - g * a2 * a2 * band;
+      keep *= 1.0 - band * smoothstep(0.25, 1.8, age);
+    }
+  }
+  // the cursor parts the hair: a soft channel ALONG the strands (wide in x, narrow in y)
   vec2 d = vec2(xx, y) - uMouse;
   vec2 q = vec2(d.x / 360.0, d.y / 120.0);
   float f = exp(-dot(q, q));
@@ -60,8 +106,9 @@ void main() {
   // soft light bands that travel along the waves, like light rolling over real hair
   vLit = 0.5 + 0.5 * sin(ph + 0.9);
   vT = t;
-  vAlpha = aC.z * uBoost * smoothstep(0.0, 0.1, t) * (1.0 - smoothstep(0.88, 1.0, t));
+  vAlpha = aC.z * uBoost * smoothstep(0.0, 0.1, t) * (1.0 - smoothstep(0.88, 1.0, t)) * keep;
   vMix = aC.w;
+  vSev = sev;
 }`;
 
 const FRAG = /* glsl */ `
@@ -73,7 +120,9 @@ varying float vAlpha;
 varying float vMix;
 varying float vLit;
 varying float vT;
+varying float vSev;
 void main() {
+  if (vSev > 0.001 && vSev < 0.999) discard; // the segment bridging a cut
   vec3 col = vMix < 0.7 ? mix(uC1, uC2, vMix / 0.7) : mix(uC2, uC3, (vMix - 0.7) / 0.3);
   float roots = mix(0.5, 1.0, smoothstep(0.0, 0.45, vT)); // darker toward the roots
   col *= (0.5 + 0.55 * vLit) * roots;
@@ -187,6 +236,7 @@ export default function HairField() {
           uTime: { value: 0 },
           uRes: { value: new THREE.Vector2(1, 1) },
           uMouse: { value: new THREE.Vector2(-9999, -9999) },
+          uCut: { value: Array.from({ length: 4 }, () => new THREE.Vector4(0, 0, 0, -1)) },
           uLight: { value: 0 },
           uScale: { value: 1 },
           uBoost: { value: 1 },
@@ -225,6 +275,15 @@ export default function HairField() {
           if (u.uMouse.value.x < -9000) u.uMouse.value.copy(target);
         };
         const onLeave = () => target.set(-9999, -9999);
+        // a click (or tap) snips the hair at that spot
+        let cutIndex = 0;
+        const onDown = (e: PointerEvent) => {
+          if ((e.target as Element | null)?.closest("a, button, [role='radio'], input")) return;
+          const r = el.getBoundingClientRect();
+          const px = e.clientX - r.left, py = e.clientY - r.top;
+          if (px < 0 || py < 0 || px > r.width || py > r.height) return;
+          u.uCut.value[cutIndex++ % 4].set(px, r.height - py, r.width < 760 ? 85 : 125, u.uTime.value);
+        };
         let visible = true;
         const t0 = performance.now();
         const frame = (now: number) => {
@@ -243,6 +302,7 @@ export default function HairField() {
         io.observe(el);
         window.addEventListener("resize", resize);
         window.addEventListener("pointermove", onMove, { passive: true });
+        window.addEventListener("pointerdown", onDown);
         document.addEventListener("pointerleave", onLeave);
 
         cleanup = () => {
@@ -250,6 +310,7 @@ export default function HairField() {
           io.disconnect();
           window.removeEventListener("resize", resize);
           window.removeEventListener("pointermove", onMove);
+          window.removeEventListener("pointerdown", onDown);
           document.removeEventListener("pointerleave", onLeave);
           geo.dispose();
           mat.dispose();

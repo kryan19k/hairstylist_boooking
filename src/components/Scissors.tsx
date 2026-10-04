@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 
 const BASE_TILT = -28; // tips lean up-left like a pointer
@@ -9,14 +9,11 @@ const PIVOT_Y = 50;
 const IDLE_OPEN = 7;
 const S = 0.95; // overall size
 
-type Strand = { x: number; y: number; vx: number; vy: number; rot: number; vr: number; len: number; bend: number; w: number; age: number; life: number; c: number };
-
 // Salon shears that ARE the cursor over the hero: polished blades, a screw, and finger/thumb rings
 // that spread as the blades open. The blades open wider the faster you move and snip shut on click,
-// which also sends a little burst of cut hair falling away. Everywhere else the normal pointer is used.
+// which cuts the hair in the hero (see HairField). Everywhere else the normal pointer is used.
 export default function Scissors() {
   const [shown, setShown] = useState(false);
-  const canvas = useRef<HTMLCanvasElement>(null);
 
   const x = useMotionValue(-100);
   const y = useMotionValue(-100);
@@ -31,69 +28,8 @@ export default function Scissors() {
   useEffect(() => {
     if (!window.matchMedia("(pointer: fine) and (hover: hover)").matches) return;
     const root = document.documentElement;
-    const cv = canvas.current!;
-    const ctx = cv.getContext("2d")!;
-    let dpr = 1, raf = 0, last = 0;
-    const strands: Strand[] = [];
     let idle: ReturnType<typeof setTimeout>;
     let pressed = false;
-
-    const resize = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      cv.width = window.innerWidth * dpr;
-      cv.height = window.innerHeight * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-    resize();
-
-    const colors = () => {
-      const css = getComputedStyle(root);
-      return [css.getPropertyValue("--accent2").trim(), css.getPropertyValue("--accent").trim(), css.getPropertyValue("--counter").trim()];
-    };
-
-    // a snip: a burst of freshly cut strands that pop up a little, then fall
-    const snip = (px: number, py: number) => {
-      const n = 16 + Math.floor(Math.random() * 6);
-      for (let i = 0; i < n; i++) {
-        strands.push({
-          x: px + (Math.random() - 0.5) * 26, y: py + (Math.random() - 0.5) * 14,
-          vx: (Math.random() - 0.5) * 170, vy: -90 - Math.random() * 130,
-          rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 7,
-          len: 20 + Math.random() * 44, bend: (Math.random() - 0.5) * 20, w: 1.1 + Math.random() * 1.5,
-          age: 0, life: 1.1 + Math.random() * 0.9, c: Math.floor(Math.random() * 3),
-        });
-      }
-      if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); }
-    };
-
-    const tick = (now: number) => {
-      const dt = Math.min(0.04, (now - last) / 1000);
-      last = now;
-      const pal = colors();
-      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-      ctx.lineCap = "round";
-      for (let i = strands.length - 1; i >= 0; i--) {
-        const s = strands[i];
-        s.age += dt;
-        if (s.age >= s.life) { strands.splice(i, 1); continue; }
-        s.vy += 620 * dt;               // gravity
-        s.vx *= 1 - 0.7 * dt;           // air drag
-        s.x += s.vx * dt; s.y += s.vy * dt; s.rot += s.vr * dt;
-        const a = Math.min(1, (s.life - s.age) / 0.45);
-        ctx.save();
-        ctx.translate(s.x, s.y);
-        ctx.rotate(s.rot);
-        ctx.globalAlpha = a * 0.95;
-        ctx.strokeStyle = pal[s.c];
-        ctx.lineWidth = s.w;
-        ctx.beginPath();
-        ctx.moveTo(-s.len / 2, 0);
-        ctx.quadraticCurveTo(0, s.bend, s.len / 2, 0);
-        ctx.stroke();
-        ctx.restore();
-      }
-      raf = strands.length ? requestAnimationFrame(tick) : 0;
-    };
 
     const inHeroTarget = (t: Element | null) => !!t?.closest("#hero") && !t?.closest("a, button, [role='radio'], input");
 
@@ -122,8 +58,7 @@ export default function Scissors() {
     const down = (e: PointerEvent) => {
       if (!inHeroTarget(e.target as Element | null)) return;
       pressed = true;
-      openTarget.set(0); // snip!
-      snip(e.clientX, e.clientY);
+      openTarget.set(0); // snip! (the hair itself gets cut in HairField)
     };
     const up = () => {
       pressed = false;
@@ -131,7 +66,6 @@ export default function Scissors() {
       setTimeout(() => !pressed && openTarget.set(IDLE_OPEN), 120);
     };
     const leave = () => { root.classList.remove("has-brush"); setShown(false); };
-    window.addEventListener("resize", resize);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("pointermove", move, { passive: true });
     window.addEventListener("pointerdown", down);
@@ -139,9 +73,7 @@ export default function Scissors() {
     document.documentElement.addEventListener("mouseleave", leave);
     return () => {
       clearTimeout(idle);
-      cancelAnimationFrame(raf);
       root.classList.remove("has-brush");
-      window.removeEventListener("resize", resize);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerdown", down);
@@ -173,7 +105,6 @@ export default function Scissors() {
 
   return (
     <>
-      <canvas ref={canvas} aria-hidden className="pointer-events-none fixed inset-0 z-[99] h-full w-full" />
       <motion.div aria-hidden className="pointer-events-none fixed top-0 left-0 z-[100]" style={{ x: sx, y: sy, opacity: shown ? 1 : 0, transition: "opacity .12s" }}>
         <motion.div style={{ rotate: rot, transformOrigin: `${TIP_X * S}px ${TIP_Y * S}px`, left: -TIP_X * S, top: -TIP_Y * S, position: "absolute" }}>
           <svg width={48 * S} height={104 * S} viewBox="0 0 48 104" style={{ overflow: "visible", filter: "drop-shadow(0 3px 4px rgb(0 0 0 / .4))" }}>
