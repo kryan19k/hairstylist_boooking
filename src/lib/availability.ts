@@ -1,4 +1,5 @@
 import type { Hours } from "./site";
+import type { TFn } from "./locale";
 
 export type Slot = { time: string; endsAt: string; taken: boolean };
 export type Busy = { date: string; time: string; minutes: number };
@@ -33,10 +34,10 @@ export const formatTime = (hhmm: string) => {
   return `${h % 12 || 12}${m ? `:${pad(m)}` : ""} ${h >= 12 ? "pm" : "am"}`;
 };
 
-export const formatDuration = (minutes: number) => {
+export const formatDuration = (minutes: number, es = false) => {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return [h ? `${h} hr${h > 1 ? "s" : ""}` : "", m ? `${m} min` : ""].filter(Boolean).join(" ");
+  return [h ? (es ? `${h} h` : `${h} hr${h > 1 ? "s" : ""}`) : "", m ? `${m} min` : ""].filter(Boolean).join(" ");
 };
 
 function hash(str: string) {
@@ -83,17 +84,18 @@ export function nextAvailable(now: Date, durationMin: number, o: Omit<SlotOpts, 
   return null;
 }
 
-export function openNowLabel(now: Date, hours: Hours) {
+export function openNowLabel(now: Date, hours: Hours, t: TFn, tag = "en-US") {
   const today = hours[now.getDay()];
   const mins = now.getHours() * 60 + now.getMinutes();
-  if (today && mins >= toMinutes(today[0]) && mins < toMinutes(today[1])) return `Open until ${formatTime(today[1])}`;
+  if (today && mins >= toMinutes(today[0]) && mins < toMinutes(today[1])) return t("open.until", { time: formatTime(today[1]) });
   for (let i = 0; i < 8; i++) {
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
     const h = hours[d.getDay()];
     if (!h) continue;
     if (i === 0 && mins >= toMinutes(h[1])) continue;
-    if (i === 0) return `Opens today ${formatTime(h[0])}`;
-    return `Opens ${i === 1 ? "tomorrow" : d.toLocaleDateString("en-US", { weekday: "long" })} ${formatTime(h[0])}`;
+    if (i === 0) return t("open.today", { time: formatTime(h[0]) });
+    if (i === 1) return t("open.tomorrow", { time: formatTime(h[0]) });
+    return t("open.day", { day: d.toLocaleDateString(tag, { weekday: "long" }), time: formatTime(h[0]) });
   }
-  return "Closed";
+  return t("open.closed");
 }

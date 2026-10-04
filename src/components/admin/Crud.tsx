@@ -4,7 +4,8 @@ import { browserClient } from "@/lib/supabase";
 import { revalidateSite } from "@/app/actions";
 import { Btn, Field, ImageField, inputCls, Notice } from "./ui";
 
-export type Row = Record<string, string | number | boolean | string[] | null>;
+export type Es = Record<string, string>;
+export type Row = Record<string, string | number | boolean | string[] | Es | null>;
 export type FieldDef = {
   key: string;
   label: string;
@@ -12,6 +13,8 @@ export type FieldDef = {
   options?: string[];
   hint?: string;
   wide?: boolean;
+  /** Also show a Spanish input for this field (saved in the row's `es` column). */
+  tr?: boolean;
 };
 
 type Props = {
@@ -28,6 +31,14 @@ type Props = {
   setupSql?: string;
 };
 
+export const ES_SQL = `alter table public.services add column if not exists es jsonb not null default '{}'::jsonb;
+alter table public.addons   add column if not exists es jsonb not null default '{}'::jsonb;
+alter table public.looks    add column if not exists es jsonb not null default '{}'::jsonb;
+alter table public.reviews  add column if not exists es jsonb not null default '{}'::jsonb;
+alter table public.faqs     add column if not exists es jsonb not null default '{}'::jsonb;
+alter table public.team     add column if not exists es jsonb not null default '{}'::jsonb;
+notify pgrst, 'reload schema';`;
+
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "item";
 
 export default function Crud({ table, title, blurb, fields, idMode, titleKey, subtitle, blank, setupSql }: Props) {
@@ -38,6 +49,7 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
   const [msg, setMsg] = useState<{ kind: "error" | "ok"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [missing, setMissing] = useState(false);
+  const [needEs, setNeedEs] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
@@ -75,6 +87,7 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
     for (const f of fields) if (f.type === "image" && !out[f.key]) out[f.key] = null;
     const { error } = await db.from(table).upsert(out);
     setBusy(false);
+    if (error?.code === "PGRST204" && /\bes\b/.test(error.message)) return setNeedEs(true);
     if (error) return setMsg({ kind: "error", text: error.message });
     setFresh((f) => { const n = new Set(f); n.delete(row.id as string); return n; });
     setOpen(null);
@@ -104,6 +117,19 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
     await revalidateSite();
     await load();
   };
+
+  if (needEs) {
+    return (
+      <div className="space-y-4">
+        <h2 className="font-display text-3xl font-light">{title}</h2>
+        <Notice kind="info">
+          Spanish support needs a one-time database update. Open Supabase → <b>SQL Editor</b> → New query, paste the SQL below, press <b>Run</b>, then reload this page and save again.
+        </Notice>
+        <pre className="max-h-72 overflow-auto rounded-2xl border border-line bg-ink-2 p-4 text-xs leading-relaxed whitespace-pre-wrap">{ES_SQL}</pre>
+        <Btn kind="accent" onClick={() => navigator.clipboard.writeText(ES_SQL)}>Copy SQL</Btn>
+      </div>
+    );
+  }
 
   if (missing) {
     return (
@@ -186,6 +212,8 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
                           </Field>
                         );
                       }
+                      const esVal = ((row.es as Es | undefined) ?? {})[f.key] ?? "";
+                      const setEs = (val: string) => patch(id, { es: { ...((row.es as Es | undefined) ?? {}), [f.key]: val } });
                       return (
                         <Field key={f.key} label={f.label} hint={f.hint} className={span}>
                           {f.type === "textarea" ? (
@@ -198,6 +226,16 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
                             <input className={inputCls} type="number" min={0} step="any" value={String(v ?? 0)} onChange={(e) => patch(id, { [f.key]: Number(e.target.value) })} />
                           ) : (
                             <input className={inputCls} value={String(v ?? "")} onChange={(e) => patch(id, { [f.key]: e.target.value })} />
+                          )}
+                          {f.tr && (f.type === "text" || f.type === "textarea") && (
+                            <span className="mt-2 block">
+                              <span className="mb-1 block text-[0.62rem] tracking-[0.2em] text-accent uppercase">Español</span>
+                              {f.type === "textarea" ? (
+                                <textarea className={`${inputCls} min-h-20`} value={esVal} onChange={(e) => setEs(e.target.value)} placeholder="Traducción al español (opcional)" />
+                              ) : (
+                                <input className={inputCls} value={esVal} onChange={(e) => setEs(e.target.value)} placeholder="Traducción al español (opcional)" />
+                              )}
+                            </span>
                           )}
                         </Field>
                       );

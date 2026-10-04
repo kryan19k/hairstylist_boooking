@@ -1,20 +1,22 @@
 "use client";
 import { motion } from "motion/react";
 import { setShade, shades, useShade } from "@/lib/shade";
+import { useT } from "@/lib/locale";
 
 export default function ShadeSwitcher({ labelled = false }: { labelled?: boolean }) {
   const current = useShade();
+  const t = useT();
   const active = shades.find((s) => s.id === current)!;
   return (
-    <div className="flex items-center gap-3" role="radiogroup" aria-label="Choose your hair shade. Recolors the whole site.">
+    <div className="flex items-center gap-3" role="radiogroup" aria-label={t("shade.group")}>
       <div className="flex items-center gap-1.5">
         {shades.map((s) => (
           <button
             key={s.id}
             role="radio"
             aria-checked={current === s.id}
-            aria-label={s.name}
-            title={s.name}
+            aria-label={t(`shade.${s.id}`)}
+            title={t(`shade.${s.id}`)}
             onClick={() => setShade(s.id)}
             className="relative grid size-7 place-items-center rounded-full"
           >
@@ -25,7 +27,7 @@ export default function ShadeSwitcher({ labelled = false }: { labelled?: boolean
           </button>
         ))}
       </div>
-      {labelled && <span className="hidden w-16 text-xs tracking-[0.2em] text-muted uppercase sm:block">{active.name}</span>}
+      {labelled && <span className="hidden w-16 text-xs tracking-[0.2em] text-muted uppercase sm:block">{t(`shade.${active.id}`)}</span>}
     </div>
   );
 }

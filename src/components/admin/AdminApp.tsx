@@ -4,9 +4,10 @@ import type { Session } from "@supabase/supabase-js";
 import { browserClient, hasSupabase } from "@/lib/supabase";
 import { revalidateSite } from "@/app/actions";
 import { addons, categories, faqs, lookCategories, looks, reviews, services } from "@/lib/data";
+import { addonsEs, faqsEs, looksEs, reviewsEs, servicesEs } from "@/lib/data-es";
 import { defaultSettings, mergeSettings } from "@/lib/site";
 import { Btn, Field, inputCls, Notice } from "./ui";
-import Crud, { type FieldDef } from "./Crud";
+import Crud, { ES_SQL, type FieldDef } from "./Crud";
 import BookingsAdmin from "./BookingsAdmin";
 import SettingsAdmin from "./SettingsAdmin";
 import ThemeToggle from "../ThemeToggle";
@@ -25,27 +26,27 @@ const tabs = [
 type Tab = (typeof tabs)[number][0];
 
 const serviceFields: FieldDef[] = [
-  { key: "name", label: "Service name", type: "text" },
+  { key: "name", label: "Service name", type: "text", tr: true },
   { key: "category", label: "Category", type: "select", options: [...categories] },
-  { key: "blurb", label: "Description", type: "textarea" },
+  { key: "blurb", label: "Description", type: "textarea", tr: true },
   { key: "price", label: "Starting price ($)", type: "number" },
   { key: "minutes", label: "Duration (minutes)", type: "number" },
   { key: "deposit", label: "Deposit ($)", type: "number", hint: "0 = no deposit" },
 ];
 const addonFields: FieldDef[] = [
-  { key: "name", label: "Name", type: "text" },
-  { key: "blurb", label: "Short description", type: "text" },
+  { key: "name", label: "Name", type: "text", tr: true },
+  { key: "blurb", label: "Short description", type: "text", tr: true },
   { key: "price", label: "Price ($)", type: "number" },
   { key: "minutes", label: "Adds (minutes)", type: "number" },
 ];
 const lookFields: FieldDef[] = [
   { key: "image_url", label: "After photo (main image)", type: "image" },
   { key: "before_url", label: "Before photo (optional, enables the slider)", type: "image" },
-  { key: "title", label: "Title", type: "text" },
+  { key: "title", label: "Title", type: "text", tr: true },
   { key: "category", label: "Category", type: "select", options: lookCategories.filter((c) => c !== "All") },
   { key: "service_id", label: "Linked service id", type: "text", hint: "The “Book this look” button preselects this service. Copy an id from the Services tab URL list, e.g. blonde-balayage." },
-  { key: "story", label: "Story", type: "textarea" },
-  { key: "hours", label: "Time in chair (label)", type: "text", hint: "e.g. 3.5 hrs" },
+  { key: "story", label: "Story", type: "textarea", tr: true },
+  { key: "hours", label: "Time in chair (label)", type: "text", hint: "e.g. 3.5 hrs", tr: true },
   { key: "kind", label: "Placeholder art style", type: "select", options: ["straight", "wave", "curl", "bob"], hint: "Only used when no photo is uploaded." },
   { key: "palette", label: "Palette (placeholder art)", type: "palette" },
 ];
@@ -68,19 +69,19 @@ create policy "admin write" on public.team for all to authenticated using (publi
 const teamFields: FieldDef[] = [
   { key: "photo_url", label: "Photo", type: "image" },
   { key: "name", label: "Name", type: "text" },
-  { key: "role", label: "Role", type: "text", hint: "e.g. Color specialist" },
-  { key: "bio", label: "Short bio", type: "textarea" },
+  { key: "role", label: "Role", type: "text", hint: "e.g. Color specialist", tr: true },
+  { key: "bio", label: "Short bio", type: "textarea", tr: true },
   { key: "instagram", label: "Instagram handle", type: "text", hint: "without the @" },
 ];
 const reviewFields: FieldDef[] = [
   { key: "name", label: "Client name", type: "text" },
-  { key: "service", label: "Service they had", type: "text" },
-  { key: "quote", label: "Review", type: "textarea" },
+  { key: "service", label: "Service they had", type: "text", tr: true },
+  { key: "quote", label: "Review", type: "textarea", tr: true },
   { key: "stars", label: "Stars (1–5)", type: "number" },
 ];
 const faqFields: FieldDef[] = [
-  { key: "q", label: "Question", type: "text", wide: true },
-  { key: "a", label: "Answer", type: "textarea" },
+  { key: "q", label: "Question", type: "text", wide: true, tr: true },
+  { key: "a", label: "Answer", type: "textarea", tr: true },
 ];
 
 function Login() {
@@ -115,6 +116,8 @@ export default function AdminApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [tab, setTab] = useState<Tab>("bookings");
   const [seeded, setSeeded] = useState(true);
+  const [esState, setEsState] = useState<"ok" | "needsSql" | "needsText">("ok");
+  const [copied, setCopied] = useState(false);
   const [note, setNote] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
   const check = async () => {
@@ -123,7 +126,15 @@ export default function AdminApp() {
     if (error) return setGate("no-schema");
     if (data === true) {
       const st = await db.from("site_settings").select("data").eq("id", 1).maybeSingle();
-      setSeeded(mergeSettings(st.data?.data).seeded);
+      const isSeeded = mergeSettings(st.data?.data).seeded;
+      setSeeded(isSeeded);
+      if (isSeeded) {
+        // Spanish support: is the `es` column there, and has the starter content been translated?
+        const probe = await db.from("services").select("es").limit(1);
+        if (probe.error) setEsState("needsSql");
+        else if (probe.data?.[0] && Object.keys((probe.data[0].es as object) ?? {}).length === 0) setEsState("needsText");
+        else setEsState("ok");
+      }
       return setGate("owner");
     }
     // Signed in but not an owner. If nobody owns the site yet, claim_admin() will succeed.
@@ -148,15 +159,34 @@ export default function AdminApp() {
     else setGate("denied");
   };
 
+  const seedSpanish = async () => {
+    const db = browserClient();
+    const jobs = [
+      ...Object.entries(servicesEs).map(([id, es]) => db.from("services").update({ es }).eq("id", id)),
+      ...Object.entries(addonsEs).map(([id, es]) => db.from("addons").update({ es }).eq("id", id)),
+      ...Object.entries(looksEs).map(([id, es]) => db.from("looks").update({ es }).eq("id", id)),
+    ];
+    const rv = await db.from("reviews").select("id").order("sort", { ascending: true });
+    (rv.data ?? []).forEach((r, i) => reviewsEs[i] && jobs.push(db.from("reviews").update({ es: reviewsEs[i] }).eq("id", r.id)));
+    const fq = await db.from("faqs").select("id").order("sort", { ascending: true });
+    (fq.data ?? []).forEach((f, i) => faqsEs[i] && jobs.push(db.from("faqs").update({ es: faqsEs[i] }).eq("id", f.id)));
+    const results = await Promise.all(jobs);
+    const bad = results.find((r) => r.error);
+    if (bad?.error) return setNote({ kind: "error", text: bad.error.message });
+    setEsState("ok");
+    setNote({ kind: "ok", text: "Spanish added to the starter content. Review it in each section (look for the “Español” boxes)." });
+    await revalidateSite();
+  };
+
   const seed = async () => {
     if (!window.confirm("Load the starter services, portfolio, reviews and FAQ into your database? You can edit or delete everything afterwards.")) return;
     const db = browserClient();
     const results = await Promise.all([
-      db.from("services").upsert(services.map((s, i) => ({ id: s.id, name: s.name, category: s.category, blurb: s.blurb, price: s.price, minutes: s.minutes, deposit: s.deposit, sort: i + 1, active: true }))),
-      db.from("addons").upsert(addons.map((a, i) => ({ ...a, sort: i + 1, active: true }))),
-      db.from("looks").upsert(looks.map((l, i) => ({ id: l.id, title: l.title, category: l.category, kind: l.kind, palette: l.palette, service_id: l.serviceId, story: l.story, hours: l.hours, seed: l.seed, image_url: null, before_url: null, sort: i + 1, active: true }))),
-      db.from("reviews").insert(reviews.map((r, i) => ({ ...r, sort: i + 1, active: true }))),
-      db.from("faqs").insert(faqs.map((f, i) => ({ ...f, sort: i + 1, active: true }))),
+      db.from("services").upsert(services.map((s, i) => ({ id: s.id, name: s.name, category: s.category, blurb: s.blurb, price: s.price, minutes: s.minutes, deposit: s.deposit, es: servicesEs[s.id] ?? {}, sort: i + 1, active: true }))),
+      db.from("addons").upsert(addons.map((a, i) => ({ ...a, es: addonsEs[a.id] ?? {}, sort: i + 1, active: true }))),
+      db.from("looks").upsert(looks.map((l, i) => ({ id: l.id, title: l.title, category: l.category, kind: l.kind, palette: l.palette, service_id: l.serviceId, story: l.story, hours: l.hours, seed: l.seed, image_url: null, before_url: null, es: looksEs[l.id] ?? {}, sort: i + 1, active: true }))),
+      db.from("reviews").insert(reviews.map((r, i) => ({ ...r, es: reviewsEs[i] ?? {}, sort: i + 1, active: true }))),
+      db.from("faqs").insert(faqs.map((f, i) => ({ ...f, es: faqsEs[i] ?? {}, sort: i + 1, active: true }))),
     ]);
     const bad = results.find((r) => r.error);
     if (bad?.error) return setNote({ kind: "error", text: bad.error.message });
@@ -216,6 +246,21 @@ export default function AdminApp() {
               <p className="font-medium">Your website is showing sample content.</p>
               <p className="text-sm text-cream/75">Load the starter services, portfolio, reviews and FAQ into your database so you can edit them here.</p>
               <Btn kind="accent" onClick={seed}>Load starter content</Btn>
+            </div>
+          )}
+          {seeded && esState === "needsSql" && (
+            <div className="mb-6 space-y-3 rounded-2xl border border-accent/50 bg-accent/10 p-5">
+              <p className="font-medium">Turn on Spanish for your content</p>
+              <p className="text-sm text-cream/75">One-time step: open Supabase → <b>SQL Editor</b> → New query, paste this, press <b>Run</b>, then reload this page.</p>
+              <pre className="max-h-48 overflow-auto rounded-xl border border-line bg-ink-2 p-3 text-xs whitespace-pre-wrap">{ES_SQL}</pre>
+              <Btn kind="accent" onClick={() => navigator.clipboard.writeText(ES_SQL).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); })}>{copied ? "Copied ✓" : "Copy SQL"}</Btn>
+            </div>
+          )}
+          {seeded && esState === "needsText" && (
+            <div className="mb-6 space-y-3 rounded-2xl border border-accent/50 bg-accent/10 p-5">
+              <p className="font-medium">Add Spanish to your starter content</p>
+              <p className="text-sm text-cream/75">Visitors can switch the site to Spanish. Add ready-made Spanish for the starter services, portfolio, reviews and FAQ now; you can edit any of it afterwards.</p>
+              <Btn kind="accent" onClick={seedSpanish}>Add Spanish translations</Btn>
             </div>
           )}
           {note && <div className="mb-6"><Notice kind={note.kind}>{note.text}</Notice></div>}

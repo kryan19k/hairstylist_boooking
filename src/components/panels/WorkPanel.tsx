@@ -5,9 +5,9 @@ import Image from "next/image";
 import LookArt from "../LookArt";
 import { lookCategories, type Look } from "@/lib/data";
 import { useContent } from "../ContentProvider";
-import { formatDuration } from "@/lib/availability";
 import { useBooking } from "@/lib/booking-store";
 import { useRouter } from "next/navigation";
+import { useT, useDuration } from "@/lib/locale";
 
 function LookImage({ look, muted = false }: { look: Look; muted?: boolean }) {
   const src = muted ? look.before : look.image;
@@ -16,6 +16,7 @@ function LookImage({ look, muted = false }: { look: Look; muted?: boolean }) {
 }
 
 function BeforeAfter({ look }: { look: Look }) {
+  const t = useT();
   const [pos, setPos] = useState(55);
   const box = useRef<HTMLDivElement>(null);
   const drag = (clientX: number) => {
@@ -33,14 +34,14 @@ function BeforeAfter({ look }: { look: Look }) {
       <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
         <LookImage look={look} muted />
       </div>
-      <span className="absolute top-3 left-3 rounded-full bg-ink/70 px-3 py-1 text-[0.65rem] tracking-widest uppercase backdrop-blur">Before</span>
-      <span className="absolute top-3 right-3 rounded-full bg-ink/70 px-3 py-1 text-[0.65rem] tracking-widest uppercase backdrop-blur">After</span>
+      <span className="absolute top-3 left-3 rounded-full bg-ink/70 px-3 py-1 text-[0.65rem] tracking-widest uppercase backdrop-blur">{t("work.before")}</span>
+      <span className="absolute top-3 right-3 rounded-full bg-ink/70 px-3 py-1 text-[0.65rem] tracking-widest uppercase backdrop-blur">{t("work.after")}</span>
       <div className="absolute inset-y-0 w-0.5 bg-cream" style={{ left: `${pos}%` }}>
         <div className="absolute top-1/2 left-1/2 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-cream text-ink shadow-xl">⇆</div>
       </div>
       <input
         type="range" min={2} max={98} value={pos} onChange={(e) => setPos(+e.target.value)}
-        aria-label="Reveal before and after" className="sr-only"
+        aria-label={t("work.reveal")} className="sr-only"
       />
     </div>
   );
@@ -49,6 +50,8 @@ function BeforeAfter({ look }: { look: Look }) {
 function Lightbox({ look, onClose }: { look: Look; onClose: () => void }) {
   const setService = useBooking((s) => s.setService);
   const router = useRouter();
+  const t = useT();
+  const dur = useDuration();
   const { services } = useContent();
   const service = services.find((s) => s.id === look.serviceId);
   useEffect(() => {
@@ -74,28 +77,28 @@ function Lightbox({ look, onClose }: { look: Look; onClose: () => void }) {
         <div className="p-3 md:p-4"><BeforeAfter look={look} /></div>
         <div className="flex flex-col justify-between gap-8 p-6 md:p-8">
           <div>
-            <p className="text-xs tracking-[0.3em] text-accent uppercase">{look.category}</p>
+            <p className="text-xs tracking-[0.3em] text-accent uppercase">{t(`cat.${look.category}`)}</p>
             <h3 className="font-display mt-2 text-4xl font-light">{look.title}</h3>
             <p className="mt-4 leading-relaxed text-cream/75">{look.story}</p>
             <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
               {service && (
                 <>
-                  <div><dt className="text-muted">Service</dt><dd className="mt-0.5 font-medium">{service.name}</dd></div>
-                  <div><dt className="text-muted">Time in chair</dt><dd className="mt-0.5 font-medium">{formatDuration(service.minutes)}</dd></div>
-                  <div><dt className="text-muted">From</dt><dd className="mt-0.5 font-medium">${service.price}</dd></div>
+                  <div><dt className="text-muted">{t("work.service")}</dt><dd className="mt-0.5 font-medium">{service.name}</dd></div>
+                  <div><dt className="text-muted">{t("work.chair")}</dt><dd className="mt-0.5 font-medium">{dur(service.minutes)}</dd></div>
+                  <div><dt className="text-muted">{t("work.from")}</dt><dd className="mt-0.5 font-medium">${service.price}</dd></div>
                 </>
               )}
-              <div><dt className="text-muted">Palette</dt><dd className="mt-1 flex gap-1.5">{look.palette.map((c) => <span key={c} className="size-5 rounded-full ring-1 ring-cream/20" style={{ background: c }} />)}</dd></div>
+              <div><dt className="text-muted">{t("work.palette")}</dt><dd className="mt-1 flex gap-1.5">{look.palette.map((c) => <span key={c} className="size-5 rounded-full ring-1 ring-cream/20" style={{ background: c }} />)}</dd></div>
             </dl>
           </div>
           <div className="flex gap-3">
             <button
               className="btn-accent flex-1 rounded-full px-6 py-3.5"
-              onClick={() => { setService(service?.id ?? null, `Inspired by “${look.title}”`); onClose(); router.push("/#book"); }}
+              onClick={() => { setService(service?.id ?? null, t("work.inspired", { title: look.title })); onClose(); router.push("/#book"); }}
             >
-              Book this look
+              {t("work.bookLook")}
             </button>
-            <button className="btn-ghost rounded-full px-6 py-3.5" onClick={onClose}>Close</button>
+            <button className="btn-ghost rounded-full px-6 py-3.5" onClick={onClose}>{t("work.close")}</button>
           </div>
         </div>
       </motion.div>
@@ -105,13 +108,14 @@ function Lightbox({ look, onClose }: { look: Look; onClose: () => void }) {
 
 export default function WorkPanel() {
   const { looks } = useContent();
+  const t = useT();
   const [cat, setCat] = useState<(typeof lookCategories)[number]>("All");
   const [open, setOpen] = useState<Look | null>(null);
   const shown = cat === "All" ? looks : looks.filter((l) => l.category === cat);
 
   return (
     <div>
-      <div className="mb-8 flex flex-wrap gap-2" role="group" aria-label="Filter portfolio">
+      <div className="mb-8 flex flex-wrap gap-2" role="group" aria-label={t("work.filter")}>
         {lookCategories.map((c) => (
           <button
             key={c}
@@ -119,7 +123,7 @@ export default function WorkPanel() {
             aria-pressed={cat === c}
             className={`rounded-full border px-4 py-2 text-sm transition ${cat === c ? "border-accent bg-accent/15 text-accent2" : "border-line text-cream/70 hover:border-cream/40"}`}
           >
-            {c}
+            {t(`cat.${c}`)}
             <span className="ml-2 text-xs opacity-50">{c === "All" ? looks.length : looks.filter((l) => l.category === c).length}</span>
           </button>
         ))}
@@ -141,15 +145,15 @@ export default function WorkPanel() {
               <div className="absolute inset-0 transition-transform duration-[1200ms] ease-out group-hover:scale-110"><LookImage look={look} /></div>
               <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/10 to-transparent opacity-80 transition group-hover:opacity-100" />
               <div className="absolute inset-x-0 bottom-0 translate-y-2 p-4 transition duration-500 group-hover:translate-y-0 sm:p-5">
-                <p className="text-[0.65rem] tracking-[0.25em] text-accent2 uppercase">{look.category}</p>
+                <p className="text-[0.65rem] tracking-[0.25em] text-accent2 uppercase">{t(`cat.${look.category}`)}</p>
                 <p className="font-display mt-1 text-xl sm:text-2xl">{look.title}</p>
-                <p className="mt-1 max-h-0 overflow-hidden text-xs text-cream/70 opacity-0 transition-all duration-500 group-hover:max-h-12 group-hover:opacity-100">Tap to compare before &amp; after →</p>
+                <p className="mt-1 max-h-0 overflow-hidden text-xs text-cream/70 opacity-0 transition-all duration-500 group-hover:max-h-12 group-hover:opacity-100">{t("work.compare")}</p>
               </div>
             </motion.button>
           ))}
         </AnimatePresence>
       </motion.div>
-      <p className="mt-6 text-center text-xs text-muted">{looks.some((l) => l.image) ? "" : "Illustrative previews. Real client photography drops in here."}</p>
+      <p className="mt-6 text-center text-xs text-muted">{looks.some((l) => l.image) ? "" : t("work.illustrative")}</p>
       <AnimatePresence>{open && <Lightbox look={open} onClose={() => setOpen(null)} />}</AnimatePresence>
     </div>
   );

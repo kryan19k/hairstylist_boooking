@@ -1,14 +1,16 @@
 "use client";
 import { setTheme, useTheme } from "@/lib/shade";
+import { useT } from "@/lib/locale";
 
 export default function ThemeToggle() {
   const theme = useTheme();
+  const t = useT();
   const next = theme === "light" ? "dark" : "light";
   return (
     <button
       onClick={() => setTheme(next)}
-      aria-label={`Switch to ${next} mode`}
-      title={`${next === "dark" ? "Black" : "Ivory"} mode`}
+      aria-label={t(next === "dark" ? "theme.toDark" : "theme.toLight")}
+      title={t(next === "dark" ? "theme.toDark" : "theme.toLight")}
       className="glass grid size-9 place-items-center rounded-full transition hover:scale-110"
     >
       {theme === "light" ? (

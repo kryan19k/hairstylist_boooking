@@ -3,6 +3,7 @@ import Image from "next/image";
 import { motion } from "motion/react";
 import { useContent } from "./ContentProvider";
 import { goTab } from "@/lib/tabs";
+import { useT } from "@/lib/locale";
 
 export function Portrait({ name, src, className = "" }: { name: string; src?: string; className?: string }) {
   const initials = name.split(" ").map((w) => w[0]).slice(0, 2).join("");
@@ -19,18 +20,19 @@ export function Portrait({ name, src, className = "" }: { name: string; src?: st
 
 export default function TeamSection() {
   const { team, settings: s } = useContent();
+  const t = useT();
   const members = team.length
     ? team
-    : [{ id: "owner", name: s.stylist, role: "Owner & lead stylist", bio: `Founder of ${s.name} ${s.tagline}. Color, cuts and styling in ${s.city}.`, photoUrl: s.portraitUrl, instagram: s.instagram }];
+    : [{ id: "owner", name: s.stylist, role: t("team.ownerRole"), bio: t("team.ownerBio", { name: s.name, tagline: s.tagline, city: s.city }), photoUrl: s.portraitUrl, instagram: s.instagram }];
 
   return (
     <section aria-labelledby="team-title" className="relative mx-auto max-w-7xl px-4 pt-16 pb-4 sm:px-8 sm:pt-24 sm:pb-8">
       <div className="mb-8 flex flex-col sm:mb-12 gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs tracking-[0.3em] text-accent uppercase">The people</p>
-          <h2 id="team-title" className="font-display mt-3 text-5xl font-light sm:text-6xl">Meet the <span className="text-shade italic">team</span></h2>
+          <p className="text-xs tracking-[0.3em] text-accent uppercase">{t("team.kicker")}</p>
+          <h2 id="team-title" className="font-display mt-3 text-5xl font-light sm:text-6xl">{t("team.title1")} <span className="text-shade italic">{t("team.title2")}</span></h2>
         </div>
-        <p className="max-w-sm text-cream/70">The hands behind every chair at {s.name}. Book any of us and expect the same care.</p>
+        <p className="max-w-sm text-cream/70">{t("team.blurb", { name: s.name })}</p>
       </div>
 
       <ul className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3" style={members.length === 1 ? { gridTemplateColumns: "minmax(0, 22rem)", justifyContent: "center" } : undefined}>
@@ -51,7 +53,7 @@ export default function TeamSection() {
             <p className="mt-1 text-xs tracking-[0.25em] text-accent uppercase">{m.role}</p>
             {m.bio && <p className="mt-3 text-cream/70">{m.bio}</p>}
             <div className="mt-4 flex items-center gap-4 text-sm">
-              <button onClick={() => goTab("book")} className="text-accent2 underline-offset-4 hover:underline">Book a visit →</button>
+              <button onClick={() => goTab("book")} className="text-accent2 underline-offset-4 hover:underline">{t("team.book")}</button>
               {m.instagram && <a href={`https://instagram.com/${m.instagram}`} target="_blank" rel="noreferrer" className="text-muted hover:text-cream">@{m.instagram}</a>}
             </div>
           </motion.li>

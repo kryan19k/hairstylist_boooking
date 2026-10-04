@@ -1,8 +1,7 @@
 "use client";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { aftercare } from "@/lib/data";
-import { dayNames } from "@/lib/site";
+import { useT, useLocale, intlTag } from "@/lib/locale";
 import { useContent } from "../ContentProvider";
 import { formatTime, openNowLabel } from "@/lib/availability";
 import { useClientValue } from "@/lib/client-value";
@@ -11,12 +10,14 @@ const gifts = [50, 100, 150, 250];
 
 function Hours() {
   const { settings: site } = useContent();
+  const t = useT();
+  const tag = intlTag(useLocale());
   const today = useClientValue(() => new Date().getDay(), -1);
-  const label = useClientValue(() => openNowLabel(new Date(), site.hours), "");
+  const label = useClientValue(() => openNowLabel(new Date(), site.hours, t, tag), "");
   return (
     <div className="glass rounded-3xl p-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-display text-2xl">Hours</h3>
+        <h3 className="font-display text-2xl">{t("info.hours")}</h3>
         {label && <span className="flex items-center gap-2 text-xs text-counter"><span className="pulse-dot size-2 rounded-full bg-counter" />{label}</span>}
       </div>
       <ul className="mt-4 divide-y divide-line text-sm">
@@ -24,8 +25,8 @@ function Hours() {
           const h = site.hours[d];
           return (
             <li key={d} className={`flex justify-between py-2.5 ${today === d ? "font-semibold text-accent2" : "text-cream/75"}`}>
-              <span>{dayNames[d]}</span>
-              <span>{h ? `${formatTime(h[0])} – ${formatTime(h[1])}` : "Closed"}</span>
+              <span className="capitalize">{new Date(2024, 0, 7 + d).toLocaleDateString(tag, { weekday: "long" })}</span>
+              <span>{h ? `${formatTime(h[0])} – ${formatTime(h[1])}` : t("info.closed")}</span>
             </li>
           );
         })}
@@ -36,12 +37,13 @@ function Hours() {
 
 function Gift() {
   const { settings: site } = useContent();
+  const t = useT();
   const [amt, setAmt] = useState(100);
   return (
     <div className="paper relative overflow-hidden rounded-3xl p-6">
       <div className="pointer-events-none absolute -right-10 -bottom-10 size-48 rounded-full bg-[radial-gradient(circle,var(--accent),transparent_70%)] opacity-50" />
-      <p className="text-xs tracking-[0.3em] uppercase opacity-60">Gift card</p>
-      <h3 className="font-display mt-2 text-3xl">Give someone a glow-up</h3>
+      <p className="text-xs tracking-[0.3em] uppercase opacity-60">{t("info.gift")}</p>
+      <h3 className="font-display mt-2 text-3xl">{t("info.giftTitle")}</h3>
       <div className="mt-5 flex flex-wrap gap-2">
         {gifts.map((g) => (
           <button key={g} onClick={() => setAmt(g)} aria-pressed={amt === g} className={`rounded-full border px-4 py-2 text-sm transition ${amt === g ? "border-paper-ink bg-paper-ink text-[var(--paper-from)]" : "border-paper-ink/30 hover:border-paper-ink"}`}>${g}</button>
@@ -49,10 +51,10 @@ function Gift() {
       </div>
       {(site.email || site.phone || site.instagram) && (
         <a
-          href={site.email ? `mailto:${site.email}?subject=${encodeURIComponent(`Gift card request ($${amt})`)}` : site.phone ? `sms:${site.phone}` : `https://instagram.com/${site.instagram}`}
+          href={site.email ? `mailto:${site.email}?subject=${encodeURIComponent(t("info.giftBtn", { amount: amt }))}` : site.phone ? `sms:${site.phone}` : `https://instagram.com/${site.instagram}`}
           className="mt-6 inline-block rounded-full bg-paper-ink px-6 py-3 text-sm font-semibold text-[var(--paper-from)] transition hover:scale-[1.03]"
         >
-          Request a ${amt} gift card
+          {t("info.giftBtn", { amount: amt })}
         </a>
       )}
     </div>
@@ -61,10 +63,11 @@ function Gift() {
 
 function Faq() {
   const { faqs } = useContent();
+  const t = useT();
   const [open, setOpen] = useState<number | null>(0);
   return (
     <div>
-      <h3 className="font-display text-3xl">Good questions</h3>
+      <h3 className="font-display text-3xl">{t("info.faq")}</h3>
       <div className="mt-4 divide-y divide-line border-y border-line">
         {faqs.map((f, i) => (
           <div key={f.id}>
@@ -88,19 +91,20 @@ function Faq() {
 
 export default function StudioPanel() {
   const { settings: site } = useContent();
+  const t = useT();
   return (
     <div className="space-y-16">
       <div className="grid gap-6 lg:grid-cols-3">
         <Hours />
         <div className="glass rounded-3xl p-6">
-          <h3 className="font-display text-2xl">Find us</h3>
+          <h3 className="font-display text-2xl">{t("info.find")}</h3>
           <p className="mt-4 text-cream/80">{site.address}</p>
           {site.directionsNote && <p className="mt-4 text-sm text-muted">{site.directionsNote}</p>}
           <div className="mt-5 space-y-1 text-sm">
             {site.phone && <a className="block text-accent2 hover:underline" href={`tel:${site.phone}`}>{site.phone}</a>}
             {site.email && <a className="block text-accent2 hover:underline" href={`mailto:${site.email}`}>{site.email}</a>}
           </div>
-          <a className="btn-ghost mt-5 inline-block rounded-full px-5 py-2.5 text-sm" target="_blank" rel="noreferrer" href={`https://maps.google.com/?q=${encodeURIComponent(site.address)}`}>Get directions ↗</a>
+          <a className="btn-ghost mt-5 inline-block rounded-full px-5 py-2.5 text-sm" target="_blank" rel="noreferrer" href={`https://maps.google.com/?q=${encodeURIComponent(site.address)}`}>{t("info.directions")}</a>
         </div>
         <Gift />
       </div>
@@ -108,13 +112,13 @@ export default function StudioPanel() {
       <Faq />
 
       <div>
-        <h3 className="font-display text-3xl">Aftercare, in four lines</h3>
+        <h3 className="font-display text-3xl">{t("info.aftercare")}</h3>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {aftercare.map((a, i) => (
-            <motion.div key={a.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} className="rounded-2xl border border-line p-5">
-              <span className="font-display text-3xl text-accent">0{i + 1}</span>
-              <p className="mt-2 font-medium">{a.title}</p>
-              <p className="mt-1 text-sm text-cream/65">{a.body}</p>
+          {[1, 2, 3, 4].map((n, i) => (
+            <motion.div key={n} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} className="rounded-2xl border border-line p-5">
+              <span className="font-display text-3xl text-accent">0{n}</span>
+              <p className="mt-2 font-medium">{t(`care.${n}.t`)}</p>
+              <p className="mt-1 text-sm text-cream/65">{t(`care.${n}.b`)}</p>
             </motion.div>
           ))}
         </div>

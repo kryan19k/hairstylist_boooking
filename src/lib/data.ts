@@ -1,13 +1,16 @@
 // Starter content. Shown until the owner loads it into Supabase (admin → Load starter
 // content); after that the database is the source of truth. Reviews are placeholders.
 
-export type Review = { id: string; name: string; service: string; quote: string; stars: number };
-export type Faq = { id: string; q: string; a: string };
-export type TeamMember = { id: string; name: string; role: string; bio: string; photoUrl: string; instagram: string };
+export type Review = { es?: Es; id: string; name: string; service: string; quote: string; stars: number };
+export type Faq = { es?: Es; id: string; q: string; a: string };
+export type TeamMember = { es?: Es; id: string; name: string; role: string; bio: string; photoUrl: string; instagram: string };
 
 export type ServiceCategory = "Cut" | "Color" | "Blonding" | "Styling";
 
+export type Es = Record<string, string>;
+
 export type Service = {
+  es?: Es;
   id: string;
   name: string;
   category: ServiceCategory;
@@ -17,7 +20,7 @@ export type Service = {
   deposit: number;
 };
 
-export type Addon = { id: string; name: string; blurb: string; price: number; minutes: number };
+export type Addon = { es?: Es; id: string; name: string; blurb: string; price: number; minutes: number };
 
 export const services: Service[] = [
   { id: "cut-signature", name: "Signature Cut & Finish", category: "Cut", blurb: "Consultation, shampoo, a cut shaped to your bone structure and your morning routine, styled to leave.", price: 95, minutes: 60, deposit: 25 },
@@ -49,6 +52,7 @@ export type LookKind = "straight" | "wave" | "curl" | "bob";
 export type LookCategory = "Color" | "Cut" | "Texture" | "Bridal";
 
 export type Look = {
+  es?: Es;
   id: string;
   title: string;
   category: LookCategory;

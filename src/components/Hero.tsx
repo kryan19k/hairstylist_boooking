@@ -8,9 +8,10 @@ import { goTab } from "@/lib/tabs";
 import { useContent } from "./ContentProvider";
 import { useClientValue } from "@/lib/client-value";
 import { openNowLabel } from "@/lib/availability";
+import { useT, useLocale, intlTag } from "@/lib/locale";
 
-const words = ["Your", "color,", "composed."];
-const marquee = ["Balayage", "Precision Cuts", "Vivid Color", "Platinum", "Bridal", "Gloss", "Curl Sculpting", "Blowouts", "Bond Repair", "Color Correction"];
+const wordKeys = ["hero.w1", "hero.w2", "hero.w3"];
+const marqueeKeys = Array.from({ length: 10 }, (_, i) => `marquee.${i + 1}`);
 
 export default function Hero() {
   const ref = useRef<HTMLElement>(null);
@@ -18,7 +19,9 @@ export default function Hero() {
   const y = useTransform(scrollYProgress, [0, 1], [0, 140]);
   const fade = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
   const { settings: site } = useContent();
-  const open = useClientValue(() => openNowLabel(new Date(), site.hours), "");
+  const t = useT();
+  const tag = intlTag(useLocale());
+  const open = useClientValue(() => openNowLabel(new Date(), site.hours, t, tag), "");
 
   return (
     <section id="hero" ref={ref} className="relative isolate flex min-h-[100svh] flex-col justify-end overflow-hidden pt-[36svh] pb-24 sm:pt-28">
@@ -35,7 +38,7 @@ export default function Hero() {
         >
           <span>{site.city}</span>
           <span className="hidden h-px w-8 bg-line sm:block" />
-          <span>by {site.stylist}</span>
+          <span>{t("hero.by", { name: site.stylist })}</span>
           {open && (
             <>
               <span className="hidden h-px w-8 bg-line sm:block" />
@@ -45,15 +48,15 @@ export default function Hero() {
         </motion.div>
 
         <h1 className="font-display text-[clamp(3.4rem,11vw,10rem)] leading-[0.9] font-light tracking-tight">
-          {words.map((wd, i) => (
-            <span key={wd} className="mr-[0.22em] inline-block overflow-hidden pb-[0.12em] align-bottom">
+          {wordKeys.map((k, i) => (
+            <span key={k} className="mr-[0.22em] inline-block overflow-hidden pb-[0.12em] align-bottom">
               <motion.span
                 className={`inline-block ${i === 1 ? "text-shade italic" : ""}`}
                 initial={{ y: "110%", rotate: 4 }}
                 animate={{ y: 0, rotate: 0 }}
                 transition={{ delay: 0.35 + i * 0.12, duration: 1, ease: [0.16, 1, 0.3, 1] }}
               >
-                {wd}
+                {t(k)}
               </motion.span>
             </span>
           ))}
@@ -68,14 +71,14 @@ export default function Hero() {
               {site.heroBlurb}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <button onClick={() => goTab("book")} className="btn-accent rounded-full px-5 py-3 text-sm sm:px-7 sm:py-3.5 sm:text-base">Reserve your chair</button>
-              <Link href="/portfolio" className="btn-ghost rounded-full px-5 py-3 text-sm sm:px-7 sm:py-3.5 sm:text-base">See the work</Link>
+              <button onClick={() => goTab("book")} className="btn-accent rounded-full px-5 py-3 text-sm sm:px-7 sm:py-3.5 sm:text-base">{t("hero.cta")}</button>
+              <Link href="/portfolio" className="btn-ghost rounded-full px-5 py-3 text-sm sm:px-7 sm:py-3.5 sm:text-base">{t("hero.work")}</Link>
             </div>
           </div>
           <div className="glass flex w-full items-center justify-between gap-4 self-start rounded-2xl px-4 py-3 sm:w-auto sm:gap-5 sm:px-5 sm:py-4 lg:self-auto">
             <div>
-              <p className="text-[0.65rem] tracking-[0.25em] text-muted uppercase">Try a shade</p>
-              <p className="mt-1 hidden text-sm text-cream/70 sm:block">Tap one. The whole studio recolors.</p>
+              <p className="text-[0.65rem] tracking-[0.25em] text-muted uppercase">{t("hero.shade")}</p>
+              <p className="mt-1 hidden text-sm text-cream/70 sm:block">{t("hero.shadeHint")}</p>
             </div>
             <ShadeSwitcher labelled />
           </div>
@@ -84,9 +87,9 @@ export default function Hero() {
 
       <div className="relative mt-12 overflow-hidden border-y border-line bg-ink/40 py-3 backdrop-blur-sm" aria-hidden>
         <div className="marquee flex w-max gap-10 whitespace-nowrap">
-          {[...marquee, ...marquee].map((m, i) => (
+          {[...marqueeKeys, ...marqueeKeys].map((m, i) => (
             <span key={i} className="flex items-center gap-10 font-display text-lg text-cream/60 italic">
-              {m}<span className="text-accent">✦</span>
+              {t(m)}<span className="text-accent">✦</span>
             </span>
           ))}
         </div>

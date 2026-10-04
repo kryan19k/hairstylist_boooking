@@ -130,6 +130,17 @@ create table if not exists public.bookings (
 create unique index if not exists bookings_slot_unique on public.bookings (date, time) where status <> 'cancelled';
 
 ------------------------------------------------------------------
+-- Spanish translations (one jsonb per row: {"name": "...", "blurb": "..."})
+------------------------------------------------------------------
+alter table public.services add column if not exists es jsonb not null default '{}'::jsonb;
+alter table public.addons   add column if not exists es jsonb not null default '{}'::jsonb;
+alter table public.looks    add column if not exists es jsonb not null default '{}'::jsonb;
+alter table public.reviews  add column if not exists es jsonb not null default '{}'::jsonb;
+alter table public.faqs     add column if not exists es jsonb not null default '{}'::jsonb;
+alter table public.team     add column if not exists es jsonb not null default '{}'::jsonb;
+notify pgrst, 'reload schema';
+
+------------------------------------------------------------------
 -- Row level security
 ------------------------------------------------------------------
 do $$

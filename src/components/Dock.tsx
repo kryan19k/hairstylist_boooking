@@ -2,13 +2,17 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { goTab, tabs, useTab } from "@/lib/tabs";
+import { useT } from "@/lib/locale";
+
+const navKey = { services: "nav.menu", book: "nav.reserve", stories: "nav.stories", studio: "nav.studio" } as const;
 
 // Floating pill nav — the page's tab bar. Always within thumb reach.
 export default function Dock() {
   const active = useTab();
+  const tr = useT();
   return (
     <motion.nav
-      aria-label="Sections"
+      aria-label={tr("nav.sections")}
       initial={{ y: 80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 1.2, type: "spring", stiffness: 160, damping: 20 }}
@@ -34,11 +38,11 @@ export default function Dock() {
                   transition={{ type: "spring", stiffness: 420, damping: 34 }}
                 />
               )}
-              <span className="relative">{t.label}</span>
+              <span className="relative">{tr(navKey[t.id])}</span>
             </button>
           );
         })}
-        <Link href="/portfolio" className="rounded-full px-3 py-2.5 text-[0.8rem] font-medium text-cream/70 transition-colors hover:text-cream sm:px-6 sm:text-sm">Portfolio</Link>
+        <Link href="/portfolio" className="rounded-full px-3 py-2.5 text-[0.8rem] font-medium text-cream/70 transition-colors hover:text-cream sm:px-6 sm:text-sm">{tr("nav.portfolio")}</Link>
       </div>
     </motion.nav>
   );

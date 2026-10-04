@@ -25,6 +25,18 @@ export default function SettingsAdmin() {
   const text = (k: keyof SiteSettings) => ({ className: inputCls, value: String(s[k] ?? ""), onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => set(k, e.target.value as never) });
   const num = (k: keyof SiteSettings) => ({ className: inputCls, type: "number", step: "any", value: String(s[k]), onChange: (e: React.ChangeEvent<HTMLInputElement>) => set(k, Number(e.target.value) as never) });
 
+  const setEs = (k: keyof SiteSettings["es"], v: string) => setS({ ...s, es: { ...s.es, [k]: v } });
+  const es = (k: keyof SiteSettings["es"], multiline = false) => (
+    <span className="mt-2 block">
+      <span className="mb-1 block text-[0.62rem] tracking-[0.2em] text-accent uppercase">Español</span>
+      {multiline ? (
+        <textarea className={`${inputCls} min-h-20`} value={s.es[k] ?? ""} onChange={(e) => setEs(k, e.target.value)} placeholder="Traducción al español" />
+      ) : (
+        <input className={inputCls} value={s.es[k] ?? ""} onChange={(e) => setEs(k, e.target.value)} placeholder="Traducción al español" />
+      )}
+    </span>
+  );
+
   const setDay = (d: number, v: [string, string] | null) => set("hours", { ...s.hours, [d]: v });
 
   const save = async (e: React.FormEvent) => {
@@ -49,21 +61,21 @@ export default function SettingsAdmin() {
       <section className="grid gap-4 sm:grid-cols-2">
         <h3 className="font-display text-xl sm:col-span-2">Salon</h3>
         <Field label="Salon name" hint="Big wordmark in the header"><input {...text("name")} /></Field>
-        <Field label="Subtitle" hint="Small text beside the name"><input {...text("tagline")} /></Field>
+        <Field label="Subtitle" hint="Small text beside the name"><input {...text("tagline")} />{es("tagline")}</Field>
         <Field label="Stylist name"><input {...text("stylist")} /></Field>
         <Field label="City"><input {...text("city")} /></Field>
         <Field label="Street address" className="sm:col-span-2"><input {...text("address")} /></Field>
         <Field label="Phone"><input {...text("phone")} placeholder="(951) 555-0123" /></Field>
         <Field label="Email"><input {...text("email")} type="email" /></Field>
         <Field label="Instagram handle" hint="without the @"><input {...text("instagram")} /></Field>
-        <Field label="Directions note" hint="e.g. Free parking out front"><input {...text("directionsNote")} /></Field>
+        <Field label="Directions note" hint="e.g. Free parking out front"><input {...text("directionsNote")} />{es("directionsNote")}</Field>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
         <h3 className="font-display text-xl sm:col-span-2">Homepage &amp; about</h3>
-        <Field label="Hero paragraph" className="sm:col-span-2"><textarea {...text("heroBlurb")} className={`${inputCls} min-h-20`} /></Field>
-        <Field label="About headline" className="sm:col-span-2"><input {...text("aboutTitle")} /></Field>
-        <Field label="About text" className="sm:col-span-2"><textarea {...text("aboutBody")} className={`${inputCls} min-h-32`} /></Field>
+        <Field label="Hero paragraph" className="sm:col-span-2"><textarea {...text("heroBlurb")} className={`${inputCls} min-h-20`} />{es("heroBlurb", true)}</Field>
+        <Field label="About headline" className="sm:col-span-2"><input {...text("aboutTitle")} />{es("aboutTitle")}</Field>
+        <Field label="About text" className="sm:col-span-2"><textarea {...text("aboutBody")} className={`${inputCls} min-h-32`} />{es("aboutBody", true)}</Field>
         <div className="sm:col-span-2"><ImageField label="Portrait photo" value={s.portraitUrl || null} onChange={(u) => set("portraitUrl", u ?? "")} /></div>
         <Field label="Years of experience"><input {...num("yearsExperience")} /></Field>
         <Field label="Clients served" hint="shown as text, e.g. 4,200+"><input {...text("clientsServed")} /></Field>

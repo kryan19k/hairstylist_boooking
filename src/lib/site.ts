@@ -26,6 +26,8 @@ export type SiteSettings = {
   defaultShade: string;
   defaultTheme: "light" | "dark";
   seeded: boolean;
+  /** Spanish overrides for the owner-written text (tagline, hero, about, directions). */
+  es: Partial<Record<"tagline" | "heroBlurb" | "aboutTitle" | "aboutBody" | "directionsNote", string>>;
 };
 
 export const defaultSettings: SiteSettings = {
@@ -60,6 +62,14 @@ export const defaultSettings: SiteSettings = {
   defaultShade: "gold",
   defaultTheme: "light",
   seeded: false,
+  es: {
+    tagline: "Salón de belleza",
+    heroBlurb: "Un salón privado de color y corte. Cada cabello es una composición única: tono, luz y forma, creada para ti.",
+    aboutTitle: "El cabello es el único accesorio que nunca te quitas.",
+    aboutBody:
+      "Soy Fabiola. Por más de una década he construido mi trabajo sobre consultas lentas y honestas y un color que crece de forma hermosa. Sin prisas, sin fórmulas de molde: una persona a la vez, en un salón tranquilo donde puedes respirar.",
+    directionsNote: "Estacionamiento gratis al frente.",
+  },
 };
 
 export const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -69,6 +79,6 @@ export function mergeSettings(data: Partial<SiteSettings> | null | undefined): S
   const d = data ?? {};
   // JSON turns numeric keys into strings and may drop days; rebuild hours safely.
   const hours = { ...defaultSettings.hours, ...(d.hours ?? {}) };
-  return { ...defaultSettings, ...d, hours };
+  return { ...defaultSettings, ...d, hours, es: { ...defaultSettings.es, ...(d.es ?? {}) } };
 }
 

@@ -3,13 +3,15 @@ import { motion } from "motion/react";
 import { useContent } from "./ContentProvider";
 import { Portrait } from "./TeamSection";
 import { goTab } from "@/lib/tabs";
+import { useT } from "@/lib/locale";
 
 export default function StylistSection() {
   const { settings: s } = useContent();
+  const t = useT();
   const stats = [
-    [`${s.yearsExperience}+`, "years behind the chair"],
-    [s.clientsServed, "clients styled"],
-    [s.rating.toFixed(2), "average rating"],
+    [`${s.yearsExperience}+`, t("stylist.years")],
+    [s.clientsServed, t("stylist.clients")],
+    [s.rating.toFixed(2), t("stylist.rating")],
   ];
   return (
     <section aria-labelledby="stylist-title" className="relative mx-auto max-w-7xl px-4 pt-14 pb-12 sm:px-8 sm:pt-20 sm:pb-16">
@@ -20,8 +22,8 @@ export default function StylistSection() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1 }}>
-          <p className="text-xs tracking-[0.3em] text-accent uppercase">Your stylist</p>
-          <h2 id="stylist-title" className="font-display mt-3 text-4xl font-light sm:text-6xl">Meet <span className="text-shade italic">{s.stylist.split(" ")[0]}</span></h2>
+          <p className="text-xs tracking-[0.3em] text-accent uppercase">{t("stylist.kicker")}</p>
+          <h2 id="stylist-title" className="font-display mt-3 text-4xl font-light sm:text-6xl">{t("stylist.meet")} <span className="text-shade italic">{s.stylist.split(" ")[0]}</span></h2>
           <p className="font-display mt-6 text-2xl leading-snug font-light text-cream/90">{s.aboutTitle}</p>
           <p className="mt-4 max-w-xl leading-relaxed text-cream/70">{s.aboutBody}</p>
           <dl className="mt-6 grid grid-cols-3 gap-3 border-y border-line py-5 sm:mt-8 sm:gap-4 sm:py-6">
@@ -33,7 +35,7 @@ export default function StylistSection() {
             ))}
           </dl>
           <div className="mt-8 flex flex-wrap gap-3">
-            <button onClick={() => goTab("book")} className="btn-accent rounded-full px-7 py-3.5">Book a consultation</button>
+            <button onClick={() => goTab("book")} className="btn-accent rounded-full px-7 py-3.5">{t("stylist.cta")}</button>
             {s.instagram && <a href={`https://instagram.com/${s.instagram}`} target="_blank" rel="noreferrer" className="btn-ghost rounded-full px-7 py-3.5">@{s.instagram}</a>}
           </div>
         </motion.div>

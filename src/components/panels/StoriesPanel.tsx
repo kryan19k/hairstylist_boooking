@@ -2,6 +2,7 @@
 import { motion } from "motion/react";
 import { useContent } from "../ContentProvider";
 import { goTab } from "@/lib/tabs";
+import { useT } from "@/lib/locale";
 
 const Stars = ({ n }: { n: number }) => (
   <span aria-label={`${n} out of 5 stars`} className="tracking-widest text-accent">{"★".repeat(n)}</span>
@@ -9,13 +10,14 @@ const Stars = ({ n }: { n: number }) => (
 
 export default function StoriesPanel() {
   const { reviews, settings: site } = useContent();
+  const t = useT();
   return (
     <div>
       <div className="mb-12 grid gap-6 rounded-3xl border border-line p-6 sm:grid-cols-3 sm:p-8">
         {[
-          [site.rating.toFixed(2), "average rating"],
-          [site.clientsServed, "clients styled"],
-          [`${site.yearsExperience} yrs`, "behind the chair"],
+          [site.rating.toFixed(2), t("stories.rating")],
+          [site.clientsServed, t("stories.clients")],
+          [`${site.yearsExperience} ${t("stories.yrs")}`, t("stories.years")],
         ].map(([n, l], i) => (
           <motion.div key={l} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="text-center sm:text-left">
             <p className="font-display text-5xl text-shade sm:text-6xl">{n}</p>
@@ -44,7 +46,7 @@ export default function StoriesPanel() {
       </div>
 
       <div className="mt-8 text-center">
-        <button onClick={() => goTab("book")} className="btn-accent rounded-full px-8 py-3.5">Write your own story →</button>
+        <button onClick={() => goTab("book")} className="btn-accent rounded-full px-8 py-3.5">{t("stories.cta")}</button>
       </div>
     </div>
   );
