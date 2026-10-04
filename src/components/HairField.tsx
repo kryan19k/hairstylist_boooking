@@ -15,44 +15,46 @@ type Uniforms = {
   uC3: { value: ThreeNS.Color };
 };
 
-/* Each strand is a helix wrapped around a flowing centre line, so locks of hair read as
-   springy ringlets. Strands in a lock share phase, so they twist together and clump like
-   real hair. Everything is animated on the GPU; the cursor parts the hair. */
+/* Locks of fine strands flow in gentle shared waves with a light ripple, lit by bands that
+   travel along the wave, so it reads as soft wavy hair. Animated on the GPU; the cursor parts it. */
 const VERT = /* glsl */ `
 uniform float uTime;
 uniform vec2 uRes;
 uniform vec2 uMouse;
 attribute float aT;
-attribute vec4 aA; // rootY, lockPhase, lockAmp, lockFreq
-attribute vec4 aB; // speed, pitch, curlRadius, jitterY
-attribute vec4 aC; // jitterPhase, curlPhase, alpha, colorMix
+attribute vec4 aA; // rootY, wavePhase, waveAmp, waveFreq
+attribute vec4 aB; // speed, ripplePitch, rippleRadius, jitterY
+attribute vec4 aC; // jitterPhase, ripplePhase, alpha, colorMix
 varying float vAlpha;
 varying float vMix;
 varying float vLit;
+varying float vT;
 void main() {
   float t = aT;
   float W = uRes.x;
   float H = uRes.y;
   float x = mix(-0.04 * W, 1.06 * W, t);
   float fan = 0.12 + 0.88 * pow(t, 0.8);
-  float y = H * 0.5 + aA.x * H * 0.36 * fan + aB.w * t;
-  // body: big slow waves so the mass of hair breathes
-  y += sin(x * aA.w + uTime * aB.x + aA.y + aC.x) * aA.z * t;
-  y += sin(x * 0.0006 - uTime * 0.2 + aA.y * 2.0) * 60.0 * t;
-  // curl: helix around the flow line; radius grows toward the ends like a real ringlet
-  float th = x / aB.y * 6.2831853 + aC.y + uTime * 0.4;
-  float R = aB.z * (0.2 + 1.05 * smoothstep(0.0, 0.75, t));
-  float depth = sin(th);
-  y += cos(th) * R + depth * R * 0.18;
-  float xx = x + depth * R * 0.35;
+  float y = H * 0.5 + aA.x * H * 0.34 * fan + aB.w * t;
+  // body: neighbouring locks share phase, so the hair moves as one flowing sheet of waves
+  float ph = x * aA.w - uTime * aB.x + aA.y;
+  y += sin(ph) * aA.z * t;
+  y += sin(ph * 0.5 + 1.3 + aC.x) * aA.z * 0.45 * t;
+  y += sin(x * 0.0006 - uTime * 0.18 + aA.x * 1.5) * 50.0 * t;
+  // fine ripple only: just enough irregularity to feel like hair, not curls
+  float th = x / aB.y * 6.2831853 + aC.y + uTime * 0.25;
+  y += cos(th) * aB.z * (0.3 + 0.9 * smoothstep(0.1, 0.9, t));
+  float xx = x;
   // the cursor combs the hair apart
   vec2 d = vec2(xx, y) - uMouse;
   float f = exp(-dot(d, d) / (210.0 * 210.0));
   y += (d.y >= 0.0 ? 1.0 : -1.0) * f * 85.0;
   xx += d.x * f * 0.12;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(xx, y, 0.0, 1.0);
-  vLit = depth * 0.5 + 0.5;
-  vAlpha = aC.z * smoothstep(0.0, 0.12, t) * (1.0 - smoothstep(0.86, 1.0, t)) * (0.5 + 0.7 * vLit);
+  // soft light bands that travel along the waves, like light rolling over real hair
+  vLit = 0.5 + 0.5 * sin(ph + 0.9);
+  vT = t;
+  vAlpha = aC.z * smoothstep(0.0, 0.1, t) * (1.0 - smoothstep(0.88, 1.0, t));
   vMix = aC.w;
 }`;
 
@@ -64,12 +66,14 @@ uniform float uLight;
 varying float vAlpha;
 varying float vMix;
 varying float vLit;
+varying float vT;
 void main() {
   vec3 col = vMix < 0.7 ? mix(uC1, uC2, vMix / 0.7) : mix(uC2, uC3, (vMix - 0.7) / 0.3);
-  col *= 0.6 + 0.55 * vLit;
-  col += vec3(1.0, 0.95, 0.85) * smoothstep(0.86, 1.0, vLit) * 0.35; // specular sheen on the curl crest
-  float a = vAlpha;
-  if (uLight > 0.5) { col *= 0.72; a *= 1.2; }
+  float roots = mix(0.5, 1.0, smoothstep(0.0, 0.45, vT)); // darker toward the roots
+  col *= (0.5 + 0.55 * vLit) * roots;
+  col += vec3(1.0, 0.94, 0.84) * smoothstep(0.82, 1.0, vLit) * 0.16; // restrained sheen, not glare
+  float a = vAlpha * (0.6 + 0.6 * vLit);
+  if (uLight > 0.5) { col *= 0.8; a *= 1.25; }
   gl_FragColor = vec4(col, a);
 }`;
 
@@ -87,25 +91,25 @@ function build(THREE: Three, mobile: boolean) {
   let v = 0;
   for (let l = 0; l < LOCKS; l++) {
     const rootY = (r() + r() - 1) * 1.05; // bell-curved so the hair is fullest in the middle
-    const lockPhase = r() * 6.2832;
-    const lockAmp = 30 + r() * 95;
-    const lockFreq = 0.0011 + r() * 0.0016;
-    const speed = 0.14 + r() * 0.32;
-    const pitch = 78 + r() * 90;
-    const radius = 10 + r() * 26;
-    const colorBase = r();
+    const wavePhase = rootY * 1.6 + (r() - 0.5) * 0.35; // neighbours wave together
+    const waveAmp = 34 + r() * 40;
+    const waveFreq = 0.0092 + r() * 0.0012; // ~600px wavelength: soft S-waves
+    const speed = 0.35 + r() * 0.06;
+    const pitch = 200 + r() * 200;
+    const radius = 2.5 + r() * 6;
+    const colorBase = Math.min(1, (rootY * 0.5 + 0.5) * 0.8 + r() * 0.2);
     for (let k = 0; k < PER; k++) {
-      const jitterY = (r() - 0.5) * 14;
-      const jitterPhase = (r() - 0.5) * 0.7;
-      const curlPhase = lockPhase + (r() - 0.5) * 0.9;
-      const rj = radius * (0.75 + r() * 0.5);
-      const alpha = 0.08 + r() * 0.22;
-      const mix = Math.min(1, Math.max(0, colorBase + (r() - 0.5) * 0.25));
+      const jitterY = (r() - 0.5) * 12;
+      const jitterPhase = (r() - 0.5) * 0.3;
+      const ripplePhase = r() * 6.2832;
+      const rj = radius * (0.7 + r() * 0.6);
+      const alpha = 0.07 + r() * 0.17;
+      const mix = Math.min(1, Math.max(0, colorBase + (r() - 0.5) * 0.2));
       for (let p = 0; p < P; p++, v++) {
         aT[v] = p / (P - 1);
-        aA.set([rootY, lockPhase, lockAmp, lockFreq], v * 4);
+        aA.set([rootY, wavePhase, waveAmp, waveFreq], v * 4);
         aB.set([speed, pitch, rj, jitterY], v * 4);
-        aC.set([jitterPhase, curlPhase, alpha, mix], v * 4);
+        aC.set([jitterPhase, ripplePhase, alpha, mix], v * 4);
       }
     }
   }
@@ -145,8 +149,6 @@ export default function HairField() {
     l.u.uC2.value.set(get("--accent"));
     l.u.uC3.value.set(get("--counter"));
     l.u.uLight.value = theme === "light" ? 1 : 0;
-    l.mat.blending = theme === "light" ? l.THREE.NormalBlending : l.THREE.AdditiveBlending;
-    l.mat.needsUpdate = true;
   }, [shade, theme]);
 
   useEffect(() => {
@@ -184,7 +186,7 @@ export default function HairField() {
           uC2: { value: new THREE.Color() },
           uC3: { value: new THREE.Color() },
         };
-        const mat = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: u, transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending });
+        const mat = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: u, transparent: true, depthTest: false, depthWrite: false, blending: THREE.NormalBlending });
         const mesh = new THREE.LineSegments(geo, mat);
         mesh.frustumCulled = false;
         scene.add(mesh);
@@ -196,7 +198,6 @@ export default function HairField() {
         u.uC3.value.set(css.getPropertyValue("--counter").trim());
         const light = document.documentElement.dataset.theme === "light";
         u.uLight.value = light ? 1 : 0;
-        mat.blending = light ? THREE.NormalBlending : THREE.AdditiveBlending;
 
         const resize = () => {
           const w = el.clientWidth, h = el.clientHeight;

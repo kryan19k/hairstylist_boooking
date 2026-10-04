@@ -49,6 +49,22 @@ const lookFields: FieldDef[] = [
   { key: "kind", label: "Placeholder art style", type: "select", options: ["straight", "wave", "curl", "bob"], hint: "Only used when no photo is uploaded." },
   { key: "palette", label: "Palette (placeholder art)", type: "palette" },
 ];
+const TEAM_SQL = `create table if not exists public.team (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  role text not null default '',
+  bio text not null default '',
+  photo_url text,
+  instagram text not null default '',
+  sort int not null default 0,
+  active boolean not null default true
+);
+alter table public.team enable row level security;
+drop policy if exists "public read" on public.team;
+create policy "public read" on public.team for select to anon, authenticated using (active or public.is_admin());
+drop policy if exists "admin write" on public.team;
+create policy "admin write" on public.team for all to authenticated using (public.is_admin()) with check (public.is_admin());`;
+
 const teamFields: FieldDef[] = [
   { key: "photo_url", label: "Photo", type: "image" },
   { key: "name", label: "Name", type: "text" },
@@ -214,7 +230,7 @@ export default function AdminApp() {
           )}
           {tab === "team" && (
             <Crud key="team" table="team" title="Team" blurb="People shown in “Meet the team” under the homepage banner. If this is empty, the owner card is shown automatically." fields={teamFields} idMode="uuid" titleKey="name"
-              subtitle={(r) => String(r.role)} blank={{ name: "", role: "", bio: "", photo_url: null, instagram: "", active: true }} />
+              subtitle={(r) => String(r.role)} blank={{ name: "", role: "", bio: "", photo_url: null, instagram: "", active: true }} setupSql={TEAM_SQL} />
           )}
           {tab === "looks" && (
             <Crud key="looks" table="looks" title="Portfolio" blurb="Upload your best work. Add a “before” photo to turn on the before/after slider." fields={lookFields} idMode="slug" titleKey="title"

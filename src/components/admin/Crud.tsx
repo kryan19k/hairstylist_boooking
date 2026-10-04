@@ -24,21 +24,26 @@ type Props = {
   titleKey: string;
   subtitle?: (r: Row) => string;
   blank: Row;
+  /** Shown (with a copy button) when the table has not been created in Supabase yet. */
+  setupSql?: string;
 };
 
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "item";
 
-export default function Crud({ table, title, blurb, fields, idMode, titleKey, subtitle, blank }: Props) {
+export default function Crud({ table, title, blurb, fields, idMode, titleKey, subtitle, blank, setupSql }: Props) {
   const db = browserClient();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   const [msg, setMsg] = useState<{ kind: "error" | "ok"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [missing, setMissing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
     const { data, error } = await browserClient().from(table).select("*").order("sort", { ascending: true });
-    if (error) setMsg({ kind: "error", text: error.message });
+    if (error?.code === "PGRST205" || error?.code === "42P01") setMissing(true);
+    else if (error) setMsg({ kind: "error", text: error.message });
     else setRows(data as Row[]);
   }, [table]);
 
@@ -99,6 +104,25 @@ export default function Crud({ table, title, blurb, fields, idMode, titleKey, su
     await revalidateSite();
     await load();
   };
+
+  if (missing) {
+    return (
+      <div className="space-y-4">
+        <h2 className="font-display text-3xl font-light">{title}</h2>
+        <Notice kind="info">
+          This section needs a one-time database update. Open Supabase → <b>SQL Editor</b> → New query, paste the SQL below, press <b>Run</b>, then reload this page.
+        </Notice>
+        {setupSql && (
+          <>
+            <pre className="max-h-72 overflow-auto rounded-2xl border border-line bg-ink-2 p-4 text-xs leading-relaxed whitespace-pre-wrap">{setupSql}</pre>
+            <Btn kind="accent" onClick={() => { navigator.clipboard.writeText(setupSql).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); }); }}>
+              {copied ? "Copied ✓" : "Copy SQL"}
+            </Btn>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>
