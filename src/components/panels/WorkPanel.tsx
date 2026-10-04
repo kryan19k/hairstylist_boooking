@@ -129,7 +129,7 @@ export default function WorkPanel() {
         ))}
       </div>
 
-      <motion.div layout className="columns-2 gap-3 sm:gap-5 lg:columns-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
         <AnimatePresence mode="popLayout">
           {shown.map((look, i) => (
             <motion.button
@@ -139,8 +139,7 @@ export default function WorkPanel() {
               initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
               transition={{ delay: i * 0.04, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               onClick={() => setOpen(look)}
-              className="group relative mb-3 block w-full overflow-hidden rounded-2xl text-left sm:mb-5"
-              style={{ aspectRatio: i % 3 === 1 ? "3 / 4.2" : i % 3 === 2 ? "3 / 3.6" : "3 / 4" }}
+              className="group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl text-left"
             >
               <div className="absolute inset-0 transition-transform duration-[1200ms] ease-out group-hover:scale-110"><LookImage look={look} /></div>
               <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/10 to-transparent opacity-80 transition group-hover:opacity-100" />
@@ -152,7 +151,7 @@ export default function WorkPanel() {
             </motion.button>
           ))}
         </AnimatePresence>
-      </motion.div>
+      </div>
       <p className="mt-6 text-center text-xs text-muted">{looks.some((l) => l.image) ? "" : t("work.illustrative")}</p>
       <AnimatePresence>{open && <Lightbox look={open} onClose={() => setOpen(null)} />}</AnimatePresence>
     </div>

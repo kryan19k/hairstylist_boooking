@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { goTab, tabs, useTab } from "@/lib/tabs";
 import { useT } from "@/lib/locale";
@@ -9,6 +10,7 @@ const navKey = { services: "nav.menu", book: "nav.reserve", stories: "nav.storie
 // Floating pill nav — the page's tab bar. Always within thumb reach.
 export default function Dock() {
   const active = useTab();
+  const onPortfolio = usePathname() === "/portfolio";
   const tr = useT();
   return (
     <motion.nav
@@ -20,7 +22,7 @@ export default function Dock() {
     >
       <div role="tablist" className="glass flex items-center gap-0.5 rounded-full p-1.5 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.7)]">
         {tabs.map((t) => {
-          const on = active === t.id;
+          const on = !onPortfolio && active === t.id;
           return (
             <button
               key={t.id}
@@ -42,7 +44,13 @@ export default function Dock() {
             </button>
           );
         })}
-        <Link href="/portfolio" className="rounded-full px-3 py-2.5 text-[0.8rem] font-medium text-cream/70 transition-colors hover:text-cream sm:px-6 sm:text-sm">{tr("nav.portfolio")}</Link>
+        <Link
+          href="/portfolio"
+          aria-current={onPortfolio ? "page" : undefined}
+          className={`rounded-full px-3 py-2.5 text-[0.8rem] font-medium transition-colors sm:px-6 sm:text-sm ${onPortfolio ? "bg-gradient-to-br from-accent2 to-accent text-on-accent" : "text-cream/70 hover:text-cream"}`}
+        >
+          {tr("nav.portfolio")}
+        </Link>
       </div>
     </motion.nav>
   );
