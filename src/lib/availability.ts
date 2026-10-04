@@ -1,8 +1,23 @@
 import type { Hours } from "./site";
 import type { TFn } from "./locale";
 
-export type Slot = { time: string; endsAt: string; taken: boolean };
-export type Busy = { date: string; time: string; minutes: number };
+export const OWNER_ID = "owner";
+
+export type Slot = { time: string; endsAt: string; taken: boolean; /** who is free at this time (staff-aware lookups) */ memberIds?: string[] };
+export type Busy = { date: string; time: string; minutes: number; /** whose chair; blank = the owner */ memberId?: string };
+export type StaffMember = {
+  id: string;
+  name: string;
+  role?: string;
+  photoUrl?: string;
+  /** Weekly working hours. null = follows the shop hours. A day set to null = day off. */
+  schedule: Hours | null;
+  /** Takes online bookings. */
+  takes: boolean;
+  /** Services this person performs. Empty = all of them. */
+  serviceIds: string[];
+};
+export type TimeOff = { memberId: string; from: string; to: string };
 export type SlotOpts = {
   hours: Hours;
   step: number;
@@ -11,6 +26,13 @@ export type SlotOpts = {
   busy?: Busy[];
   /** Pretend ~1/3 of slots are taken. Only used before the real database is live. */
   demo?: boolean;
+  /** Staff-aware lookups: who works when, who is off, whose chair to look at. */
+  staff?: StaffMember[];
+  timeOff?: TimeOff[];
+  /** "any" (default) or one staff id. */
+  memberId?: string;
+  /** Only count staff who perform this service. */
+  serviceId?: string;
 };
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -51,9 +73,49 @@ function hash(str: string) {
 
 export const hoursFor = (key: string, hours: Hours) => hours[parseDateKey(key).getDay()] ?? null;
 
-/** Slots for a date. A slot is taken if it would overlap any existing booking. */
+/** Working window per weekday for one person: their schedule clipped to the shop's opening hours. */
+export function staffWindow(shop: Hours, schedule: Hours | null | undefined): Hours {
+  if (!schedule) return shop;
+  const out: Hours = {};
+  for (let d = 0; d < 7; d++) {
+    const s = shop[d];
+    const m = schedule[d];
+    if (!s || !m) { out[d] = null; continue; }
+    const from = Math.max(toMinutes(s[0]), toMinutes(m[0]));
+    const to = Math.min(toMinutes(s[1]), toMinutes(m[1]));
+    out[d] = to > from ? [fromMinutes(from), fromMinutes(to)] : null;
+  }
+  return out;
+}
+
+export const isOff = (memberId: string, key: string, timeOff: TimeOff[] = []) =>
+  timeOff.some((t) => t.memberId === memberId && key >= t.from && key <= t.to);
+
+/**
+ * Slots for a date. With `staff`, a time only counts when someone who works that day (and is not off,
+ * and does this service) is free; each slot lists who. Without it, it is a single shop-wide calendar.
+ * A slot is taken if it would overlap an existing booking on that person's chair.
+ */
 export function getSlots(key: string, durationMin: number, o: SlotOpts): Slot[] {
-  const day = hoursFor(key, o.hours);
+  if (!o.staff || o.staff.length === 0) return trackSlots(key, durationMin, o, o.hours, o.busy ?? []);
+  const pool = o.staff.filter(
+    (m) => m.takes && (!o.memberId || o.memberId === "any" || m.id === o.memberId) && (!o.serviceId || m.serviceIds.length === 0 || m.serviceIds.includes(o.serviceId)),
+  );
+  const merged = new Map<string, Slot>();
+  for (const m of pool) {
+    if (isOff(m.id, key, o.timeOff)) continue;
+    const mine = (o.busy ?? []).filter((b) => (b.memberId || OWNER_ID) === m.id);
+    for (const s of trackSlots(key, durationMin, o, staffWindow(o.hours, m.schedule), mine)) {
+      const e = merged.get(s.time) ?? { time: s.time, endsAt: s.endsAt, taken: true, memberIds: [] };
+      if (!s.taken) { e.taken = false; e.memberIds!.push(m.id); }
+      merged.set(s.time, e);
+    }
+  }
+  return [...merged.values()].sort((a, b) => a.time.localeCompare(b.time));
+}
+
+function trackSlots(key: string, durationMin: number, o: SlotOpts, hours: Hours, allBusy: Busy[]): Slot[] {
+  const day = hoursFor(key, hours);
   if (!day) return [];
   const open = toMinutes(day[0]);
   const close = toMinutes(day[1]);
@@ -61,7 +123,7 @@ export function getSlots(key: string, durationMin: number, o: SlotOpts): Slot[] 
   if (now && parseDateKey(key) < parseDateKey(dateKey(now))) return [];
   const isToday = now ? dateKey(now) === key : false;
   const earliest = now ? now.getHours() * 60 + now.getMinutes() + o.leadHours * 60 : -1;
-  const busy = (o.busy ?? []).filter((b) => b.date === key).map((b) => [toMinutes(b.time), toMinutes(b.time) + b.minutes] as const);
+  const busy = allBusy.filter((b) => b.date === key).map((b) => [toMinutes(b.time), toMinutes(b.time) + b.minutes] as const);
 
   const slots: Slot[] = [];
   for (let t = open; t + durationMin <= close; t += o.step) {

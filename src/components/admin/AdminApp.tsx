@@ -10,6 +10,7 @@ import { Btn, Field, inputCls, Notice } from "./ui";
 import Crud, { ES_SQL, type FieldDef } from "./Crud";
 import BookingsAdmin from "./BookingsAdmin";
 import CalendarAdmin from "./CalendarAdmin";
+import { STAFF_SQL } from "@/lib/staff-sql";
 import SettingsAdmin from "./SettingsAdmin";
 import ThemeToggle from "../ThemeToggle";
 import LangToggle from "../LangToggle";
@@ -27,6 +28,7 @@ const tabs = [
   ["faqs", "FAQ"],
   ["profile", "Stylist profile"],
   ["team", "Team"],
+  ["timeoff", "Time off"],
   ["text", "Page text"],
   ["settings", "Salon & contact"],
 ] as const;
@@ -109,7 +111,16 @@ const teamFields: FieldDef[] = [
   { key: "name", label: "Name", type: "text" },
   { key: "role", label: "Role", type: "text", hint: "e.g. Color specialist", tr: true },
   { key: "bio", label: "Short bio", type: "textarea", tr: true },
-  { key: "instagram", label: "Instagram handle", type: "text", hint: "without the @" },
+  { key: "instagram", label: "Instagram handle", type: "text", hint: "without the @" },  { key: "takes_bookings", label: "Takes online bookings", type: "bool" },
+  { key: "schedule", label: "Weekly schedule", type: "schedule", hint: "Which days and hours this person works. Clients can only book them then." },
+  { key: "service_ids", label: "Services they perform", type: "services", hint: "Leave all unchecked if they do everything." },
+];
+
+const timeOffFields: FieldDef[] = [
+  { key: "member_id", label: "Who", type: "member" },
+  { key: "start_date", label: "From", type: "date" },
+  { key: "end_date", label: "To", type: "date", hint: "Same as “From” for a single day." },
+  { key: "reason", label: "Reason (private)", type: "text", hint: "Only you see this. Visitors just see that the person isn't available." },
 ];
 const reviewFields: FieldDef[] = [
   { key: "name", label: "Client name", type: "text" },
@@ -158,6 +169,7 @@ export default function AdminApp() {
   const [seeded, setSeeded] = useState(true);
   const [esState, setEsState] = useState<"ok" | "needsSql" | "needsText">("ok");
   const [copied, setCopied] = useState(false);
+  const [staffSql, setStaffSql] = useState(false);
   const [note, setNote] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
   const check = async () => {
@@ -168,6 +180,8 @@ export default function AdminApp() {
       const st = await db.from("site_settings").select("data").eq("id", 1).maybeSingle();
       const isSeeded = mergeSettings(st.data?.data).seeded;
       setSeeded(isSeeded);
+      // staff schedules need a one-time SQL update (bookings.member_id)
+      setStaffSql(!!(await db.from("bookings").select("member_id").limit(1)).error);
       if (isSeeded) {
         // Spanish support: is the `es` column there, and has the starter content been translated?
         const probe = await db.from("services").select("es").limit(1);
@@ -301,6 +315,14 @@ export default function AdminApp() {
               <Btn kind="accent" onClick={seedSpanish}>Add Spanish translations</Btn>
             </div>
           )}
+          {staffSql && (
+            <div className="mb-6 space-y-3 rounded-2xl border border-accent/50 bg-accent/10 p-5">
+              <p className="font-medium">{tx("Turn on staff schedules")}</p>
+              <p className="text-sm text-cream/75">{tx("One-time step so each person has their own schedule and days off, and bookings are tracked per person. Open Supabase → SQL Editor → New query, paste this, press Run, then reload this page.")}</p>
+              <pre className="max-h-48 overflow-auto rounded-xl border border-line bg-ink-2 p-3 text-xs whitespace-pre-wrap">{STAFF_SQL}</pre>
+              <Btn kind="accent" onClick={() => navigator.clipboard.writeText(STAFF_SQL).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); })}>{copied ? "Copied ✓" : "Copy SQL"}</Btn>
+            </div>
+          )}
           {note && <div className="mb-6"><Notice kind={note.kind}>{note.text}</Notice></div>}
           {tab === "bookings" && <BookingsAdmin />}
           {tab === "calendar" && <CalendarAdmin />}
@@ -314,7 +336,7 @@ export default function AdminApp() {
           )}
           {tab === "team" && (
             <Crud key="team" table="team" title="Team" blurb="Your employees, shown in “Meet the team” underneath your own profile on the homepage (photo, name, role, bio). Until you add someone, that section is hidden." fields={teamFields} idMode="uuid" titleKey="name"
-              subtitle={(r) => String(r.role)} blank={{ name: "", role: "", bio: "", photo_url: null, instagram: "", active: true }} setupSql={TEAM_SQL} />
+              subtitle={(r) => String(r.role)} blank={{ name: "", role: "", bio: "", photo_url: null, instagram: "", takes_bookings: true, schedule: null, service_ids: [], active: true }} setupSql={TEAM_SQL} columnSql={STAFF_SQL} />
           )}
           {tab === "products" && (
             <Crud key="products" table="products" title="Products" blurb="Shown on the Products page: eyelash extensions, shampoo, treatments and anything else you sell. Add a photo, price and description." fields={productFields} idMode="slug" titleKey="name"
@@ -327,6 +349,10 @@ export default function AdminApp() {
                 { name: "Moisture Conditioner", category: "Shampoo & conditioner", blurb: "Silky conditioner for smooth, detangled hair.", price: 30, link: "", in_stock: true, image_url: null, es: {"name": "Acondicionador de humectación", "blurb": "Acondicionador sedoso para un cabello suave y sin enredos."} },
                 { name: "Repair Hair Mask", category: "Treatments", blurb: "Weekly mask that restores strength and shine.", price: 34, link: "", in_stock: true, image_url: null, es: {"name": "Mascarilla reparadora", "blurb": "Mascarilla semanal que devuelve fuerza y brillo."} },
               ]} />
+          )}
+          {tab === "timeoff" && (
+            <Crud key="timeoff" table="time_off" title="Time off" blurb="Days someone is out (vacation, sick, appointments). Nobody can book that person on those days, and “Anyone available” skips them." fields={timeOffFields} idMode="uuid" titleKey="reason"
+              subtitle={(r) => `${r.start_date} → ${r.end_date}`} blank={{ member_id: "owner", start_date: "@today", end_date: "@today", reason: "Time off", active: true }} setupSql={STAFF_SQL} columnSql={STAFF_SQL} />
           )}
           {tab === "looks" && (
             <Crud key="looks" table="looks" title="Portfolio" blurb="Shown on the Portfolio page. Upload your best work (photos), and add a “before” photo to turn on the before/after slider." fields={lookFields} idMode="slug" titleKey="title"

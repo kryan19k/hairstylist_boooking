@@ -228,6 +228,11 @@ const en: Dict = {
   "pcat.Treatments": "Treatments",
   "pcat.Tools": "Tools",
   "pcat.Other": "Other",
+  "book.who": "Who would you like to see?",
+  "book.any": "Anyone available",
+  "book.notWorking": "{name} isn't working this day. Pick another date, or choose someone else.",
+  "book.with": "with {name}",
+  "ticket.stylist": "Stylist",
 };
 
 const es: Dict = {
@@ -444,6 +449,11 @@ const es: Dict = {
   "pcat.Treatments": "Tratamientos",
   "pcat.Tools": "Herramientas",
   "pcat.Other": "Otros",
+  "book.who": "¿Con quién quieres atenderte?",
+  "book.any": "Cualquiera disponible",
+  "book.notWorking": "{name} no trabaja este día. Elige otra fecha u otra persona.",
+  "book.with": "con {name}",
+  "ticket.stylist": "Estilista",
 };
 
 export const dict: Record<Locale, Dict> = { en, es };

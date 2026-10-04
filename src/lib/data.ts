@@ -6,7 +6,14 @@ export type Es = Record<string, string>;
 export type Review = { es?: Es; id: string; name: string; service: string; quote: string; stars: number };
 export type Faq = { es?: Es; id: string; q: string; a: string };
 export type Product = { es?: Es; id: string; name: string; category: string; blurb: string; price: number; imageUrl: string; link: string; inStock: boolean };
-export type TeamMember = { es?: Es; id: string; name: string; role: string; bio: string; photoUrl: string; instagram: string };
+export type TeamMember = {
+  es?: Es; id: string; name: string; role: string; bio: string; photoUrl: string; instagram: string;
+  takesBookings?: boolean;
+  /** weekly schedule; null = follows the shop hours */
+  schedule?: Record<number, [string, string] | null> | null;
+  /** services they perform; empty = all */
+  serviceIds?: string[];
+};
 
 export type ServiceCategory = "Cut" | "Color" | "Blonding" | "Styling";
 

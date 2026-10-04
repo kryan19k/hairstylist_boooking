@@ -7,6 +7,9 @@ type Draft = {
   date: string | null;
   time: string | null;
   note: string;
+  /** "any" or a staff id */
+  memberId: string;
+  setMember: (id: string) => void;
   setService: (id: string | null, note?: string) => void;
   toggleAddon: (id: string) => void;
   setSlot: (date: string | null, time: string | null) => void;
@@ -19,6 +22,8 @@ export const useBooking = create<Draft>((set) => ({
   date: null,
   time: null,
   note: "",
+  memberId: "any",
+  setMember: (memberId) => set({ memberId, date: null, time: null }),
   // Changing service invalidates the chosen time (duration changes what fits).
   setService: (serviceId, note = "") => set({ serviceId, date: null, time: null, note }),
   toggleAddon: (id) =>
@@ -28,5 +33,5 @@ export const useBooking = create<Draft>((set) => ({
       time: null,
     })),
   setSlot: (date, time) => set({ date, time }),
-  reset: () => set({ serviceId: null, addonIds: [], date: null, time: null, note: "" }),
+  reset: () => set({ serviceId: null, addonIds: [], date: null, time: null, note: "", memberId: "any" }),
 }));

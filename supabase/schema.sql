@@ -226,3 +226,68 @@ drop policy if exists "media admin update" on storage.objects;
 create policy "media admin update" on storage.objects for update to authenticated using (bucket_id = 'site-media' and public.is_admin());
 drop policy if exists "media admin delete" on storage.objects;
 create policy "media admin delete" on storage.objects for delete to authenticated using (bucket_id = 'site-media' and public.is_admin());
+
+------------------------------------------------------------------
+-- Staff schedules, days off, per-person double-booking protection
+------------------------------------------------------------------
+alter table if exists public.team add column if not exists takes_bookings boolean not null default true;
+alter table if exists public.team add column if not exists schedule jsonb;
+alter table if exists public.team add column if not exists service_ids text[] not null default '{}';
+alter table public.bookings add column if not exists member_id text not null default 'owner';
+
+create table if not exists public.time_off (
+  id uuid primary key default gen_random_uuid(),
+  member_id text not null default 'owner',
+  start_date date not null,
+  end_date date not null,
+  reason text not null default '',
+  sort int not null default 0,
+  active boolean not null default true,
+  check (end_date >= start_date)
+);
+alter table public.time_off enable row level security;
+drop policy if exists "admin all" on public.time_off;
+create policy "admin all" on public.time_off for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- visitors learn WHO is off and WHEN, never why
+create or replace function public.time_off_public(from_date date, to_date date)
+returns table (member_id text, start_date date, end_date date)
+language sql security definer stable set search_path = public as $$
+  select t.member_id, t.start_date, t.end_date from public.time_off t
+  where t.active and t.end_date >= from_date and t.start_date <= to_date;
+$$;
+grant execute on function public.time_off_public(date, date) to anon, authenticated;
+
+-- busy times now say whose chair
+drop function if exists public.busy_slots(date, date);
+create function public.busy_slots(from_date date, to_date date)
+returns table (date date, "time" text, minutes int, member_id text)
+language sql security definer stable set search_path = public as $$
+  select b.date, b.time, b.minutes, b.member_id from public.bookings b
+  where b.status <> 'cancelled' and b.date between from_date and to_date;
+$$;
+grant execute on function public.busy_slots(date, date) to anon, authenticated;
+
+-- two people can share a start time; one person cannot be double-booked
+drop index if exists public.bookings_slot_unique;
+create unique index if not exists bookings_slot_unique on public.bookings (date, time, member_id) where status <> 'cancelled';
+
+create or replace function public.prevent_booking_overlap() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.status <> 'cancelled' and exists (
+    select 1 from public.bookings b
+    where b.id <> new.id and b.status <> 'cancelled' and b.date = new.date and b.member_id = new.member_id
+      and (b.time::time, b.time::time + make_interval(mins => b.minutes))
+          overlaps (new.time::time, new.time::time + make_interval(mins => new.minutes))
+  ) then
+    raise exception 'That time overlaps another appointment' using errcode = '23505';
+  end if;
+  return new;
+end $$;
+drop trigger if exists bookings_no_overlap on public.bookings;
+create trigger bookings_no_overlap
+  before insert or update of date, time, minutes, status, member_id on public.bookings
+  for each row execute function public.prevent_booking_overlap();
+
+notify pgrst, 'reload schema';

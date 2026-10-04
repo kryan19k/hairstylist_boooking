@@ -8,7 +8,7 @@ import { Btn, Notice } from "./ui";
 
 type Booking = {
   id: string; ref: string; service_name: string; addon_ids: string[]; date: string; time: string; minutes: number;
-  total: number; deposit: number; name: string; email: string; phone: string; first_visit: boolean; notes: string;
+  total: number; deposit: number; member_id?: string; name: string; email: string; phone: string; first_visit: boolean; notes: string;
   status: "pending" | "confirmed" | "cancelled" | "completed"; created_at: string;
 };
 
@@ -26,6 +26,7 @@ export default function BookingsAdmin() {
   const tag = intlTag(useLocale());
   const [rows, setRows] = useState<Booking[] | null>(null);
   const [filter, setFilter] = useState<(typeof filters)[number]>("Upcoming");
+  const [names, setNames] = useState<Record<string, string>>({});
   const [err, setErr] = useState("");
   const [today] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; });
 
@@ -37,6 +38,16 @@ export default function BookingsAdmin() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch
     load();
+    // who each booking is with (only shown when the business has more than one person)
+    const c = browserClient();
+    c.from("site_settings").select("data").eq("id", 1).maybeSingle().then(({ data }) => {
+      const owner = ((data?.data ?? {}) as { stylist?: string }).stylist || "";
+      c.from("team").select("id,name").then(({ data: tm }) => {
+        const m: Record<string, string> = { owner };
+        for (const t of (tm as { id: string; name: string }[]) ?? []) m[t.id] = t.name;
+        setNames(Object.keys(m).length > 1 ? m : {});
+      });
+    });
   }, [load]);
 
   const setStatus = async (b: Booking, status: Booking["status"]) => {
@@ -78,7 +89,7 @@ export default function BookingsAdmin() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="font-display text-xl">{parseDateKey(b.date).toLocaleDateString(tag, { weekday: "short", month: "short", day: "numeric" })} · {formatTime(b.time)}</p>
-                  <p className="text-sm text-muted">{b.service_name} · {dur(b.minutes)} · {tx("est.")} ${Number(b.total)}{Number(b.deposit) ? ` · ${tx("deposit")} $${Number(b.deposit)}` : ""}</p>
+                  <p className="text-sm text-muted">{b.service_name}{names[b.member_id || "owner"] ? ` · ${tx("With")} ${names[b.member_id || "owner"]}` : ""} · {dur(b.minutes)} · {tx("est.")} ${Number(b.total)}{Number(b.deposit) ? ` · ${tx("deposit")} $${Number(b.deposit)}` : ""}</p>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs uppercase ${badge[b.status]}`}>{tx(b.status)}</span>
               </div>

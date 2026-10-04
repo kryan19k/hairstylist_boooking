@@ -7,6 +7,7 @@ import { dict } from "@/lib/i18n";
 import { useT, useTx, useLocale, intlTag } from "@/lib/locale";
 import { shades } from "@/lib/shades";
 import { Btn, Field, ImageField, inputCls, Notice } from "./ui";
+import ScheduleEditor, { type Sched } from "./ScheduleEditor";
 
 export type Section = "profile" | "text" | "shop";
 const order = [2, 3, 4, 5, 6, 0, 1];
@@ -70,7 +71,7 @@ export default function SettingsAdmin({ section }: { section: Section }) {
     const fresh = await browserClient().from("site_settings").select("data").eq("id", 1).maybeSingle();
     const current = mergeSettings(fresh.data?.data);
     const keys: Record<Section, (keyof SiteSettings)[]> = {
-      profile: ["stylist", "portraitUrl", "aboutTitle", "aboutBody", "aboutKicker", "aboutMeet", "aboutCta", "yearsExperience", "clientsServed", "rating"],
+      profile: ["stylist", "portraitUrl", "aboutTitle", "aboutBody", "aboutKicker", "aboutMeet", "aboutCta", "yearsExperience", "clientsServed", "rating", "ownerSchedule", "ownerTakesBookings"],
       text: ["heroWord1", "heroWord2", "heroWord3", "heroBlurb", "marquee", "aftercare", "showGiftCards", "giftAmounts"],
       shop: ["name", "tagline", "city", "address", "phone", "email", "instagram", "directionsNote", "defaultTheme", "defaultShade", "hours", "slotStepMinutes", "leadHours"],
     };
@@ -120,6 +121,18 @@ export default function SettingsAdmin({ section }: { section: Section }) {
             <Field label="Years of experience"><input {...num("yearsExperience")} /></Field>
             <Field label="Clients served" hint="shown as text, e.g. 4,200+"><input {...text("clientsServed")} /></Field>
             <Field label="Average rating"><input {...num("rating")} /></Field>
+          </section>
+
+          <section className="space-y-4">
+            <h3 className="font-display text-xl">{tx("Your working days")}</h3>
+            <p className="text-sm text-muted">{tx("Your own schedule, if you don't work every day the shop is open. Clients can only book you then.")}</p>
+            <label className="flex items-center gap-3 text-sm">
+              <input type="checkbox" className="size-4 accent-[var(--accent)]" checked={s.ownerTakesBookings} onChange={(e) => set("ownerTakesBookings", e.target.checked)} />
+              {tx("I take online bookings")}
+            </label>
+            {s.ownerTakesBookings && (
+              <ScheduleEditor value={s.ownerSchedule as unknown as Sched | null} shop={s.hours} onChange={(v) => set("ownerSchedule", v as unknown as SiteSettings["ownerSchedule"])} />
+            )}
           </section>
         </>
       )}

@@ -36,6 +36,9 @@ export type SiteSettings = {
   aboutKicker: string;
   aboutMeet: string;
   aboutCta: string;
+  /** The owner's own working days (null = same as the shop hours) and whether they take bookings. */
+  ownerSchedule: Hours | null;
+  ownerTakesBookings: boolean;
   /** Gift card section. */
   showGiftCards: boolean;
   giftAmounts: string;
@@ -90,6 +93,8 @@ export const defaultSettings: SiteSettings = {
   aboutMeet: "",
   aboutCta: "",
   showGiftCards: true,
+  ownerSchedule: null,
+  ownerTakesBookings: true,
   giftAmounts: "50, 100, 150, 250",
   aftercare: [],
   es: {

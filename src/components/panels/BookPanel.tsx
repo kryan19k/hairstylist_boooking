@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { categories } from "@/lib/data";
 import { useContent } from "../ContentProvider";
 import { useSlotOpts } from "@/lib/use-slots";
-import { dateKey, formatTime, getSlots, hoursFor, parseDateKey, type Busy } from "@/lib/availability";
+import Image from "next/image";
+import { dateKey, formatTime, getSlots, hoursFor, isOff, parseDateKey, staffWindow, type Busy } from "@/lib/availability";
 import { useBooking } from "@/lib/booking-store";
 import { createBooking, getBusy, type BookingResult } from "@/app/actions";
 import { useT, useLocale, useDuration, intlTag } from "@/lib/locale";
@@ -30,9 +31,10 @@ function Ticket({ summary, opts }: { summary: ReturnType<typeof useSummary>; opt
   const t = useT();
   const dur = useDuration();
   const tag = intlTag(useLocale());
-  const { date, time } = useBooking();
+  const { date, time, memberId } = useBooking();
   const { service, picked, minutes, total } = summary;
-  const end = date && time ? getSlots(date, minutes, opts).find((s) => s.time === time)?.endsAt : null;
+  const end = date && time ? getSlots(date, minutes, { ...opts, memberId, serviceId: service?.id }).find((s) => s.time === time)?.endsAt : null;
+  const people = (opts.staff ?? []).filter((m) => m.takes);
   return (
     <div className="paper relative rounded-[2.75rem] p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] [mask-image:radial-gradient(circle_9px_at_0_62%,transparent_98%,#000),radial-gradient(circle_9px_at_100%_62%,transparent_98%,#000)] [mask-composite:intersect]">
       <div className="flex items-baseline justify-between">
@@ -51,6 +53,7 @@ function Ticket({ summary, opts }: { summary: ReturnType<typeof useSummary>; opt
       </div>
       <div className="my-5 border-t border-dashed border-paper-ink/25" />
       <div className="space-y-3 text-sm">
+        {people.length > 1 && <Row label={t("ticket.stylist")} value={memberId === "any" ? t("book.any") : people.find((p) => p.id === memberId)?.name ?? t("book.any")} />}
         <Row label={t("ticket.when")} value={date && time ? `${parseDateKey(date).toLocaleDateString(tag, { month: "short", day: "numeric" })} · ${formatTime(time)}${end ? ` – ${formatTime(end)}` : ""}` : "—"} />
         <Row label={t("ticket.chair")} value={minutes ? dur(minutes) : "—"} />
         <Row label={t("ticket.depositToday")} value={service ? (service.deposit ? `$${service.deposit}` : t("ticket.none")) : "—"} />
@@ -125,11 +128,15 @@ function StepTime({ minutes, opts, onBack, onNext }: { minutes: number; opts: Re
   const t = useT();
   const dur = useDuration();
   const tag = intlTag(useLocale());
-  const { date, time, setSlot } = useBooking();
+  const { date, time, setSlot, memberId, setMember, serviceId } = useBooking();
+  // who can do this service, and whose calendar the times come from
+  const people = (opts.staff ?? []).filter((m) => m.takes && (!serviceId || m.serviceIds.length === 0 || m.serviceIds.includes(serviceId)));
+  const chosenWho = memberId !== "any" && people.some((p) => p.id === memberId) ? memberId : "any";
   const [now] = useState(() => new Date());
+  const q = { ...opts, now, memberId: chosenWho, serviceId: serviceId ?? undefined };
   const days = useMemo(() => Array.from({ length: 42 }, (_, i) => dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + i))), [now]);
-  const [sel, setSel] = useState(() => date ?? days.find((d) => getSlots(d, minutes, { ...opts, now }).some((s) => !s.taken)) ?? days[0]);
-  const slots = getSlots(sel, minutes, { ...opts, now });
+  const [sel, setSel] = useState(() => date ?? days.find((d) => getSlots(d, minutes, q).some((s) => !s.taken)) ?? days[0]);
+  const slots = getSlots(sel, minutes, q);
   const free = slots.filter((s) => !s.taken);
   const groups = [
     [t("book.morning"), free.filter((s) => s.time < "12:00")],
@@ -139,11 +146,35 @@ function StepTime({ minutes, opts, onBack, onNext }: { minutes: number; opts: Re
 
   return (
     <div>
+      {people.length > 1 && (
+        <div className="mb-8">
+          <p className="mb-3 text-xs tracking-[0.25em] text-muted uppercase">{t("book.who")}</p>
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t("book.who")}>
+            {[{ id: "any", name: t("book.any"), role: "", photoUrl: "" }, ...people.map((p) => ({ id: p.id, name: p.name, role: p.role ?? "", photoUrl: p.photoUrl ?? "" }))].map((p) => (
+              <button
+                key={p.id}
+                role="radio"
+                aria-checked={chosenWho === p.id}
+                onClick={() => setMember(p.id)}
+                className={`flex items-center gap-2.5 rounded-full border py-1.5 pr-4 pl-1.5 text-sm transition ${chosenWho === p.id ? "border-accent bg-accent/15 text-accent2" : "border-line text-cream/80 hover:border-cream/40"}`}
+              >
+                <span className="relative grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-accent2 to-accent text-xs font-bold text-on-accent">
+                  {p.photoUrl ? <Image src={p.photoUrl} alt="" fill sizes="32px" className="object-cover" /> : p.id === "any" ? "✦" : p.name[0]}
+                </span>
+                <span className="text-left leading-tight">
+                  <span className="block">{p.name}</span>
+                  {p.role && <span className="block text-[0.65rem] text-muted">{p.role}</span>}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="scroll-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0" role="listbox" aria-label={t("book.dateAria")}>
         {days.map((d) => {
           const dt = parseDateKey(d);
           const open = !!hoursFor(d, opts.hours);
-          const avail = open && getSlots(d, minutes, { ...opts, now }).some((s) => !s.taken);
+          const avail = open && getSlots(d, minutes, q).some((s) => !s.taken);
           const on = sel === d;
           return (
             <button key={d} role="option" aria-selected={on} disabled={!avail} onClick={() => setSel(d)}
@@ -159,6 +190,11 @@ function StepTime({ minutes, opts, onBack, onNext }: { minutes: number; opts: Re
 
       <p className="mt-8 font-display text-2xl">{longDate(sel, tag)}</p>
       <p className="text-sm text-muted">{t("book.apptLine", { dur: dur(minutes) })}</p>
+      {chosenWho !== "any" && hoursFor(sel, opts.hours) && (() => {
+        const p = people.find((x) => x.id === chosenWho);
+        const w = p ? staffWindow(opts.hours, p.schedule)[parseDateKey(sel).getDay()] : null;
+        return p && (isOff(p.id, sel, opts.timeOff) || !w) ? <p className="mt-2 text-sm text-accent2">{t("book.notWorking", { name: p.name.split(" ")[0] })}</p> : null;
+      })()}
 
       <AnimatePresence mode="wait">
         <motion.div key={sel} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 space-y-6">
@@ -204,7 +240,7 @@ const input = "w-full rounded-[1.6rem] border border-line bg-ink-2/60 px-4 py-3 
 
 function StepDetails({ onBack, onDone }: { onBack: () => void; onDone: (d: Done) => void }) {
   const t = useT();
-  const { serviceId, addonIds, date, time, note } = useBooking();
+  const { serviceId, addonIds, date, time, note, memberId } = useBooking();
   const [form, setForm] = useState({ name: "", email: "", phone: "", firstVisit: true, notes: note, website: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
@@ -221,7 +257,7 @@ function StepDetails({ onBack, onDone }: { onBack: () => void; onDone: (d: Done)
     if (Object.keys(er).length || !serviceId || !date || !time) return;
     setServerError("");
     start(async () => {
-      const res = await createBooking({ serviceId, addonIds, date, time, ...form });
+      const res = await createBooking({ serviceId, addonIds, date, time, memberId, ...form });
       if (res.ok) onDone(res);
       else setServerError(res.code ? t(`err.${res.code}`) : res.error);
     });
@@ -285,7 +321,7 @@ function Confirmed({ done, serviceName, date, time, onAgain }: { done: Done; ser
         <motion.path d="M24 41 l11 11 l22 -24" fill="none" stroke="var(--counter)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: 0.6, duration: 0.5 }} />
       </svg>
       <h3 className="font-display mt-6 text-5xl font-light">{t("book.done1")} <span className="text-shade italic">{t("book.done2")}</span></h3>
-      <p className="mt-4 text-cream/75">{serviceName} · {longDate(date, tag)} · {formatTime(time)}</p>
+      <p className="mt-4 text-cream/75">{serviceName} · {longDate(date, tag)} · {formatTime(time)}{done.memberName ? ` · ${t("book.with", { name: done.memberName })}` : ""}</p>
       <p className="mt-1 text-sm text-muted">{t("book.ref")} <span className="font-mono tracking-widest text-accent2">{done.ref}</span> · {t("book.confirmNote")}</p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         <button onClick={download} className="btn-accent rounded-full px-7 py-3.5">{t("book.cal")}</button>

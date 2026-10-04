@@ -1,7 +1,8 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { getContent } from "@/lib/content";
-import { getSlots, type Busy } from "@/lib/availability";
+import { getSlots, OWNER_ID, type Busy } from "@/lib/availability";
+import { buildStaff } from "@/lib/staff";
 import { hasSupabase, serverClient } from "@/lib/supabase";
 
 export type BookingInput = {
@@ -14,11 +15,13 @@ export type BookingInput = {
   phone: string;
   firstVisit: boolean;
   notes: string;
+  /** "any" or a staff id */
+  memberId?: string;
   website?: string; // honeypot — real users never fill this
 };
 
 export type BookingResult =
-  | { ok: true; ref: string; total: number; deposit: number; minutes: number }
+  | { ok: true; ref: string; total: number; deposit: number; minutes: number; memberName?: string }
   | { ok: false; error: string; code?: string };
 
 // Used only until supabase/schema.sql has been run, so the site is demoable before the DB exists.
@@ -39,7 +42,7 @@ export async function getBusy(): Promise<Busy[]> {
 export async function createBooking(input: BookingInput): Promise<BookingResult> {
   if (input.website) return { ok: false, error: "Something went wrong. Please try again.", code: "bot" }; // bot
 
-  const { services, addons, settings } = await getContent();
+  const { services, addons, settings, team, timeOff } = await getContent();
   const service = services.find((s) => s.id === input.serviceId);
   if (!service) return { ok: false, error: "That service is no longer available.", code: "service" };
   const picked = addons.filter((a) => input.addonIds.includes(a.id));
@@ -57,28 +60,45 @@ export async function createBooking(input: BookingInput): Promise<BookingResult>
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return { ok: false, error: "Please pick a date.", code: "date" };
 
   const busy = await getBusy();
-  const slot = getSlots(input.date, minutes, { hours: settings.hours, step: settings.slotStepMinutes, leadHours: settings.leadHours, busy }).find((s) => s.time === input.time);
-  if (!slot || slot.taken) return { ok: false, error: "Sorry, that time was just taken. Please pick another.", code: "taken" };
+  const staff = buildStaff(settings, team);
+  const slot = getSlots(input.date, minutes, {
+    hours: settings.hours, step: settings.slotStepMinutes, leadHours: settings.leadHours, busy,
+    staff, timeOff, memberId: input.memberId || "any", serviceId: service.id,
+  }).find((s) => s.time === input.time);
+  if (!slot || slot.taken || !slot.memberIds?.length) return { ok: false, error: "Sorry, that time was just taken. Please pick another.", code: "taken" };
+
+  // Who gets it: the person asked for, or (for "anyone") whoever is free with the lightest day.
+  const load = (id: string) => busy.filter((b) => b.date === input.date && (b.memberId || OWNER_ID) === id).length;
+  const memberId = input.memberId && input.memberId !== "any" ? input.memberId : [...slot.memberIds].sort((a, b) => load(a) - load(b))[0];
+  const memberName = staff.find((m) => m.id === memberId)?.name;
 
   const total = service.price + picked.reduce((n, a) => n + a.price, 0);
   const ref = `EE-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-  const ok = { ok: true as const, ref, minutes, total, deposit: service.deposit };
+  const ok = { ok: true as const, ref, minutes, total, deposit: service.deposit, memberName };
 
   if (hasSupabase) {
-    const { error } = await serverClient().from("bookings").insert({
+    const row: Record<string, unknown> = {
       ref, service_id: service.id, service_name: service.name, addon_ids: picked.map((a) => a.id),
       date: input.date, time: input.time, minutes, total, deposit: service.deposit,
-      name, email, phone, first_visit: !!input.firstVisit, notes,
-    });
+      name, email, phone, first_visit: !!input.firstVisit, notes, member_id: memberId,
+    };
+    const insert = (r: Record<string, unknown>) => serverClient().from("bookings").insert(r);
+    let { error } = await insert(row);
+    // The staff SQL has not been run yet: fall back to a plain (single-stylist) booking.
+    if (error && (error.code === "PGRST204" || error.code === "42703")) {
+      const legacy = { ...row };
+      delete legacy.member_id;
+      ({ error } = await insert(legacy));
+    }
     if (!error) return ok;
     if (error.code === "23505") return { ok: false, error: "Sorry, that time was just taken. Please pick another.", code: "taken" };
     // Schema not installed yet → fall through to in-memory demo mode.
-    if (error.code !== "42P01" && error.code !== "PGRST205") {
+    if (error.code !== "42P01" && error.code !== "PGRST205" && error.code !== "PGRST106") {
       console.error("[booking] insert failed:", error.message);
       return { ok: false, error: "We couldn't save your booking. Please try again or call the salon.", code: "save" };
     }
   }
-  memory.push({ date: input.date, time: input.time, minutes });
+  memory.push({ date: input.date, time: input.time, minutes, memberId });
   return ok;
 }
 
