@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { addons, categories, services, type ServiceCategory } from "@/lib/data";
+import { categories, type ServiceCategory } from "@/lib/data";
+import { useContent } from "../ContentProvider";
 import { formatDuration } from "@/lib/availability";
 import { useBooking } from "@/lib/booking-store";
 import { goTab } from "@/lib/tabs";
@@ -22,11 +23,12 @@ function recommend(a: string[]): string {
 }
 
 function Quiz() {
+  const { services } = useContent();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
   const setService = useBooking((s) => s.setService);
   const done = step >= questions.length;
-  const result = done ? services.find((s) => s.id === recommend(answers))! : null;
+  const result = done ? (services.find((s) => s.id === recommend(answers)) ?? services[0] ?? null) : null;
 
   return (
     <div className="glass relative overflow-hidden rounded-3xl p-6 sm:p-8">
@@ -34,7 +36,7 @@ function Quiz() {
       <p className="text-xs tracking-[0.3em] text-counter uppercase">Not sure? 3 questions</p>
       <AnimatePresence mode="wait">
         <motion.div key={step} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.3 }}>
-          {!done ? (
+          {!done || !result ? (
             <>
               <h3 className="font-display mt-3 text-3xl font-light">{questions[step].q}</h3>
               <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
@@ -52,10 +54,10 @@ function Quiz() {
             </>
           ) : (
             <>
-              <h3 className="font-display mt-3 text-3xl font-light">We&rsquo;d start with <span className="text-shade italic">{result!.name}</span></h3>
-              <p className="mt-3 max-w-lg text-cream/75">{result!.blurb}</p>
+              <h3 className="font-display mt-3 text-3xl font-light">We&rsquo;d start with <span className="text-shade italic">{result.name}</span></h3>
+              <p className="mt-3 max-w-lg text-cream/75">{result.blurb}</p>
               <div className="mt-6 flex flex-wrap gap-3">
-                <button className="btn-accent rounded-full px-6 py-3" onClick={() => { setService(result!.id); goTab("book"); }}>Book it · from ${result!.price}</button>
+                <button className="btn-accent rounded-full px-6 py-3" onClick={() => { setService(result.id); goTab("book"); }}>Book it · from ${result.price}</button>
                 <button className="btn-ghost rounded-full px-6 py-3" onClick={() => { setStep(0); setAnswers([]); }}>Start over</button>
               </div>
             </>
@@ -67,6 +69,7 @@ function Quiz() {
 }
 
 export default function ServicesPanel() {
+  const { services, addons } = useContent();
   const [cat, setCat] = useState<ServiceCategory>("Color");
   const [open, setOpen] = useState<string | null>(null);
   const setService = useBooking((s) => s.setService);

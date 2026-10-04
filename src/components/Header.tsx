@@ -1,14 +1,16 @@
 "use client";
 import { motion, useScroll, useTransform } from "motion/react";
 import { goTab } from "@/lib/tabs";
-import { site } from "@/lib/site";
+import { useContent } from "./ContentProvider";
+import { useSlotOpts } from "@/lib/use-slots";
+import ThemeToggle from "./ThemeToggle";
 import { useClientValue } from "@/lib/client-value";
 import { dateKey, formatTime, nextAvailable, parseDateKey } from "@/lib/availability";
 import ShadeSwitcher from "./ShadeSwitcher";
 
-function nextLabel() {
+function nextLabel(opts: Parameters<typeof nextAvailable>[2]) {
   const now = new Date();
-  const n = nextAvailable(now);
+  const n = nextAvailable(now, 60, opts);
   if (!n) return "";
   const d = parseDateKey(n.key);
   const day = n.key === dateKey(now) ? "Today" : d.toLocaleDateString("en-US", { weekday: "short" });
@@ -16,7 +18,9 @@ function nextLabel() {
 }
 
 export default function Header() {
-  const next = useClientValue(nextLabel, "");
+  const { settings: site } = useContent();
+  const opts = useSlotOpts();
+  const next = useClientValue(() => nextLabel(opts), "");
   const { scrollY } = useScroll();
   const bg = useTransform(scrollY, [0, 200], [0, 1]);
   return (
@@ -33,6 +37,7 @@ export default function Header() {
         </a>
         <div className="flex items-center gap-3 sm:gap-6">
           <div className="hidden md:block"><ShadeSwitcher /></div>
+          <ThemeToggle />
           {next && (
             <motion.button
               initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}

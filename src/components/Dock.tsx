@@ -24,7 +24,7 @@ export default function Dock() {
               aria-selected={on}
               aria-controls="studio-panel"
               onClick={() => goTab(t.id)}
-              className={`relative rounded-full px-4 py-2.5 text-sm font-medium transition-colors sm:px-6 ${on ? "text-ink" : "text-cream/70 hover:text-cream"}`}
+              className={`relative rounded-full px-4 py-2.5 text-sm font-medium transition-colors sm:px-6 ${on ? "text-on-accent" : "text-cream/70 hover:text-cream"}`}
             >
               {on && (
                 <motion.span

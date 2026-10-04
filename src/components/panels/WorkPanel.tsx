@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import LookArt from "../LookArt";
-import { looks, lookCategories, services, type Look } from "@/lib/data";
+import { lookCategories, type Look } from "@/lib/data";
+import { useContent } from "../ContentProvider";
 import { formatDuration } from "@/lib/availability";
 import { useBooking } from "@/lib/booking-store";
 import { goTab } from "@/lib/tabs";
@@ -47,7 +48,8 @@ function BeforeAfter({ look }: { look: Look }) {
 
 function Lightbox({ look, onClose }: { look: Look; onClose: () => void }) {
   const setService = useBooking((s) => s.setService);
-  const service = services.find((s) => s.id === look.serviceId)!;
+  const { services } = useContent();
+  const service = services.find((s) => s.id === look.serviceId);
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
@@ -75,16 +77,20 @@ function Lightbox({ look, onClose }: { look: Look; onClose: () => void }) {
             <h3 className="font-display mt-2 text-4xl font-light">{look.title}</h3>
             <p className="mt-4 leading-relaxed text-cream/75">{look.story}</p>
             <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
-              <div><dt className="text-muted">Service</dt><dd className="mt-0.5 font-medium">{service.name}</dd></div>
-              <div><dt className="text-muted">Time in chair</dt><dd className="mt-0.5 font-medium">{formatDuration(service.minutes)}</dd></div>
-              <div><dt className="text-muted">From</dt><dd className="mt-0.5 font-medium">${service.price}</dd></div>
+              {service && (
+                <>
+                  <div><dt className="text-muted">Service</dt><dd className="mt-0.5 font-medium">{service.name}</dd></div>
+                  <div><dt className="text-muted">Time in chair</dt><dd className="mt-0.5 font-medium">{formatDuration(service.minutes)}</dd></div>
+                  <div><dt className="text-muted">From</dt><dd className="mt-0.5 font-medium">${service.price}</dd></div>
+                </>
+              )}
               <div><dt className="text-muted">Palette</dt><dd className="mt-1 flex gap-1.5">{look.palette.map((c) => <span key={c} className="size-5 rounded-full ring-1 ring-cream/20" style={{ background: c }} />)}</dd></div>
             </dl>
           </div>
           <div className="flex gap-3">
             <button
               className="btn-accent flex-1 rounded-full px-6 py-3.5"
-              onClick={() => { setService(look.serviceId, `Inspired by “${look.title}”`); onClose(); goTab("book"); }}
+              onClick={() => { setService(service?.id ?? null, `Inspired by “${look.title}”`); onClose(); goTab("book"); }}
             >
               Book this look
             </button>
@@ -97,6 +103,7 @@ function Lightbox({ look, onClose }: { look: Look; onClose: () => void }) {
 }
 
 export default function WorkPanel() {
+  const { looks } = useContent();
   const [cat, setCat] = useState<(typeof lookCategories)[number]>("All");
   const [open, setOpen] = useState<Look | null>(null);
   const shown = cat === "All" ? looks : looks.filter((l) => l.category === cat);
@@ -141,7 +148,7 @@ export default function WorkPanel() {
           ))}
         </AnimatePresence>
       </motion.div>
-      <p className="mt-6 text-center text-xs text-muted">Illustrative previews. Real client photography drops in here.</p>
+      <p className="mt-6 text-center text-xs text-muted">{looks.some((l) => l.image) ? "" : "Illustrative previews. Real client photography drops in here."}</p>
       <AnimatePresence>{open && <Lightbox look={open} onClose={() => setOpen(null)} />}</AnimatePresence>
     </div>
   );

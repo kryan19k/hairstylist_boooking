@@ -1,6 +1,8 @@
-// Placeholder content — services, portfolio, reviews, FAQs.
-// When the DB is connected, services/looks/reviews move to Supabase tables
-// (see supabase/schema.sql) and this file becomes the seed.
+// Starter content. Shown until the owner loads it into Supabase (admin → Load starter
+// content); after that the database is the source of truth. Reviews are placeholders.
+
+export type Review = { id: string; name: string; service: string; quote: string; stars: number };
+export type Faq = { id: string; q: string; a: string };
 
 export type ServiceCategory = "Cut" | "Color" | "Blonding" | "Styling";
 
@@ -79,7 +81,7 @@ export const lookCategories: ("All" | LookCategory)[] = ["All", "Color", "Cut", 
 
 /* ---------- Reviews (placeholder) ---------- */
 
-export const reviews = [
+export const reviews: Omit<Review, "id">[] = [
   { name: "Maya R.", service: "Hand-Painted Balayage", quote: "I walked in nervous about going lighter and walked out feeling like the best version of myself. Three months later it still looks expensive.", stars: 5 },
   { name: "Josephine T.", service: "Bridal Trial", quote: "She listened to every Pinterest board I sent and somehow made it better. My wedding hair held up through the dancing and the rain.", stars: 5 },
   { name: "Dani K.", service: "Signature Cut", quote: "Best haircut of my life. It falls perfectly even when I do nothing to it. That is the whole point.", stars: 5 },
@@ -88,7 +90,7 @@ export const reviews = [
   { name: "Camille B.", service: "Bob & Crop", quote: "The consultation alone was worth it. She explained why each choice suited me, not just what was trendy.", stars: 5 },
 ];
 
-export const faqs = [
+export const faqs: Omit<Faq, "id">[] = [
   { q: "How much is the deposit, and is it refundable?", a: "Deposits range from $0–$100 depending on the service and are applied to your final total. They are fully refundable or transferable with 48 hours' notice." },
   { q: "What if I need to reschedule?", a: "Life happens. You can move your appointment free of charge up to 48 hours before. Within 48 hours the deposit is held toward your next visit." },
   { q: "Do I need a consultation for a big color change?", a: "For corrections and dramatic changes, we recommend a free 15-minute consult first. Book 'Fringe Refresh' or message us and we'll slot you in." },

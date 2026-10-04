@@ -4,7 +4,7 @@ import { useRef } from "react";
 import StrandField from "./StrandField";
 import ShadeSwitcher from "./ShadeSwitcher";
 import { goTab } from "@/lib/tabs";
-import { site } from "@/lib/site";
+import { useContent } from "./ContentProvider";
 import { useClientValue } from "@/lib/client-value";
 import { openNowLabel } from "@/lib/availability";
 
@@ -16,7 +16,8 @@ export default function Hero() {
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], [0, 140]);
   const fade = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
-  const open = useClientValue(() => openNowLabel(new Date()), "");
+  const { settings: site } = useContent();
+  const open = useClientValue(() => openNowLabel(new Date(), site.hours), "");
 
   return (
     <section ref={ref} className="relative isolate flex min-h-[100svh] flex-col justify-end overflow-hidden pt-28 pb-36 sm:pb-40">
@@ -63,7 +64,7 @@ export default function Hero() {
         >
           <div className="max-w-md">
             <p className="text-lg leading-relaxed text-cream/80">
-              A private color &amp; cutting atelier. Every head of hair is a one-off composition: tone, light and shape, built around you.
+              {site.heroBlurb}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <button onClick={() => goTab("book")} className="btn-accent rounded-full px-7 py-3.5">Reserve your chair</button>

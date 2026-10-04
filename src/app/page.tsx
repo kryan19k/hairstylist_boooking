@@ -2,9 +2,12 @@ import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import Studio from "@/components/Studio";
 import Dock from "@/components/Dock";
-import { site } from "@/lib/site";
+import { getContent } from "@/lib/content";
 
-export default function Home() {
+export const revalidate = 30;
+
+export default async function Home() {
+  const { settings: s } = await getContent();
   return (
     <>
       <Header />
@@ -13,9 +16,9 @@ export default function Home() {
         <Studio />
       </main>
       <footer className="border-t border-line px-4 pt-10 pb-32 text-center text-xs text-muted sm:px-8">
-        <p className="font-display text-2xl text-cream">{site.name}</p>
-        <p className="mt-2">{site.address} · {site.city} · {site.phone}</p>
-        <p className="mt-1">© {new Date().getFullYear()} {site.name} {site.tagline}. Placeholder content.</p>
+        <p className="font-display text-2xl text-cream">{s.name} <span className="text-base text-muted">{s.tagline}</span></p>
+        <p className="mt-2">{s.address}{s.phone ? ` · ${s.phone}` : ""}</p>
+        <p className="mt-1">© {new Date().getFullYear()} {s.name} {s.tagline}</p>
       </footer>
       <Dock />
     </>

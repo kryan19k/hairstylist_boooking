@@ -1,11 +1,12 @@
 "use client";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { addons, categories, services } from "@/lib/data";
-import { dateKey, formatDuration, formatTime, getSlots, hoursFor, parseDateKey } from "@/lib/availability";
+import { categories } from "@/lib/data";
+import { useContent } from "../ContentProvider";
+import { useSlotOpts } from "@/lib/use-slots";
+import { dateKey, formatDuration, formatTime, getSlots, hoursFor, parseDateKey, type Busy } from "@/lib/availability";
 import { useBooking } from "@/lib/booking-store";
-import { createBooking, type BookingResult } from "@/app/actions";
-import { site } from "@/lib/site";
+import { createBooking, getBusy, type BookingResult } from "@/app/actions";
 
 const steps = ["Service", "Time", "Details"] as const;
 type Done = Extract<BookingResult, { ok: true }>;
@@ -13,6 +14,7 @@ type Done = Extract<BookingResult, { ok: true }>;
 const longDate = (key: string) => parseDateKey(key).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
 function useSummary() {
+  const { services, addons } = useContent();
   const { serviceId, addonIds } = useBooking();
   const service = services.find((s) => s.id === serviceId) ?? null;
   const picked = addons.filter((a) => addonIds.includes(a.id));
@@ -22,10 +24,11 @@ function useSummary() {
 }
 
 /* The cream "receipt" that builds itself as you choose. */
-function Ticket({ summary }: { summary: ReturnType<typeof useSummary> }) {
+function Ticket({ summary, opts }: { summary: ReturnType<typeof useSummary>; opts: ReturnType<typeof useSlotOpts> }) {
+  const { settings: site } = useContent();
   const { date, time } = useBooking();
   const { service, picked, minutes, total } = summary;
-  const end = date && time ? getSlots(date, minutes).find((s) => s.time === time)?.endsAt : null;
+  const end = date && time ? getSlots(date, minutes, opts).find((s) => s.time === time)?.endsAt : null;
   return (
     <div className="paper relative rounded-3xl p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] [mask-image:radial-gradient(circle_9px_at_0_62%,transparent_98%,#000),radial-gradient(circle_9px_at_100%_62%,transparent_98%,#000)] [mask-composite:intersect]">
       <div className="flex items-baseline justify-between">
@@ -62,6 +65,7 @@ const Row = ({ label, value, strong }: { label: string; value: string; strong?: 
 
 /* ---- Step 1 ---- */
 function StepService({ onNext }: { onNext: () => void }) {
+  const { services, addons } = useContent();
   const { serviceId, addonIds, setService, toggleAddon, note } = useBooking();
   const [cat, setCat] = useState(() => services.find((s) => s.id === serviceId)?.category ?? "Color");
   return (
@@ -83,7 +87,7 @@ function StepService({ onNext }: { onNext: () => void }) {
               </div>
               <p className="mt-2 text-sm text-cream/65">{s.blurb}</p>
               <p className="mt-3 text-xs text-muted">{formatDuration(s.minutes)}{s.deposit ? ` · $${s.deposit} deposit` : ""}</p>
-              {on && <motion.span layoutId="svc-check" className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-accent text-xs text-ink">✓</motion.span>}
+              {on && <motion.span layoutId="svc-check" className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-accent text-xs text-on-accent">✓</motion.span>}
             </button>
           );
         })}
@@ -111,12 +115,12 @@ function StepService({ onNext }: { onNext: () => void }) {
 }
 
 /* ---- Step 2 ---- */
-function StepTime({ minutes, onBack, onNext }: { minutes: number; onBack: () => void; onNext: () => void }) {
+function StepTime({ minutes, opts, onBack, onNext }: { minutes: number; opts: ReturnType<typeof useSlotOpts>; onBack: () => void; onNext: () => void }) {
   const { date, time, setSlot } = useBooking();
   const [now] = useState(() => new Date());
-  const days = useMemo(() => Array.from({ length: 28 }, (_, i) => dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + i))), [now]);
-  const [sel, setSel] = useState(() => date ?? days.find((d) => getSlots(d, minutes, now).some((s) => !s.taken)) ?? days[0]);
-  const slots = getSlots(sel, minutes, now);
+  const days = useMemo(() => Array.from({ length: 42 }, (_, i) => dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + i))), [now]);
+  const [sel, setSel] = useState(() => date ?? days.find((d) => getSlots(d, minutes, { ...opts, now }).some((s) => !s.taken)) ?? days[0]);
+  const slots = getSlots(sel, minutes, { ...opts, now });
   const free = slots.filter((s) => !s.taken);
   const groups = [
     ["Morning", free.filter((s) => s.time < "12:00")],
@@ -129,12 +133,12 @@ function StepTime({ minutes, onBack, onNext }: { minutes: number; onBack: () => 
       <div className="scroll-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0" role="listbox" aria-label="Date">
         {days.map((d) => {
           const dt = parseDateKey(d);
-          const open = !!hoursFor(d);
-          const avail = open && getSlots(d, minutes, now).some((s) => !s.taken);
+          const open = !!hoursFor(d, opts.hours);
+          const avail = open && getSlots(d, minutes, { ...opts, now }).some((s) => !s.taken);
           const on = sel === d;
           return (
             <button key={d} role="option" aria-selected={on} disabled={!avail} onClick={() => setSel(d)}
-              className={`relative flex w-16 shrink-0 flex-col items-center rounded-2xl border py-3 transition ${on ? "border-accent bg-accent text-ink" : avail ? "border-line hover:border-cream/40" : "border-transparent opacity-30"}`}>
+              className={`relative flex w-16 shrink-0 flex-col items-center rounded-2xl border py-3 transition ${on ? "border-accent bg-accent text-on-accent" : avail ? "border-line hover:border-cream/40" : "border-transparent opacity-30"}`}>
               <span className="text-[0.65rem] tracking-widest uppercase opacity-70">{dt.toLocaleDateString("en-US", { weekday: "short" })}</span>
               <span className="font-display text-2xl">{dt.getDate()}</span>
               <span className="text-[0.65rem] opacity-70">{dt.toLocaleDateString("en-US", { month: "short" })}</span>
@@ -158,7 +162,7 @@ function StepTime({ minutes, onBack, onNext }: { minutes: number; onBack: () => 
                   const on = date === sel && time === s.time;
                   return (
                     <button key={s.time} aria-pressed={on} onClick={() => setSlot(sel, s.time)}
-                      className={`rounded-xl border py-2.5 text-sm transition ${on ? "border-accent bg-accent font-semibold text-ink" : "border-line hover:border-accent/60 hover:bg-accent/10"}`}>
+                      className={`rounded-xl border py-2.5 text-sm transition ${on ? "border-accent bg-accent font-semibold text-on-accent" : "border-line hover:border-accent/60 hover:bg-accent/10"}`}>
                       {formatTime(s.time)}
                     </button>
                   );
@@ -230,7 +234,7 @@ function StepDetails({ onBack, onDone }: { onBack: () => void; onDone: (d: Done)
         This is my first visit
       </label>
       {serverError && <p role="alert" className="rounded-xl border border-[#ff8f8f]/40 bg-[#ff8f8f]/10 px-4 py-3 text-sm text-[#ffb3b3]">{serverError}</p>}
-      <p className="text-xs text-muted">Free reschedule up to 48 hours before. A secure deposit link will be emailed after you confirm.</p>
+      <p className="text-xs text-muted">Free reschedule up to 48 hours before. Any deposit is collected when the salon confirms your appointment.</p>
       <div className="flex gap-3 pt-2">
         <button type="button" onClick={onBack} className="btn-ghost rounded-full px-6 py-3.5">← Back</button>
         <button type="submit" disabled={pending} className="btn-accent rounded-full px-8 py-3.5">{pending ? "Securing your chair…" : "Confirm booking"}</button>
@@ -240,23 +244,24 @@ function StepDetails({ onBack, onDone }: { onBack: () => void; onDone: (d: Done)
 }
 
 /* ---- Confirmation ---- */
-function ics(done: Done, serviceName: string, date: string, time: string) {
+function ics(done: Done, serviceName: string, date: string, time: string, site: { name: string; address: string }) {
   const [y, m, d] = date.split("-");
   const [hh, mm] = time.split(":").map(Number);
   const end = hh * 60 + mm + done.minutes;
   const stamp = (mins: number) => `${y}${m}${d}T${String(Math.floor(mins / 60)).padStart(2, "0")}${String(mins % 60).padStart(2, "0")}00`;
   return [
-    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Aurelle//Booking//EN", "BEGIN:VEVENT",
-    `UID:${done.ref}@aurelle.studio`, `DTSTAMP:${stamp(0).slice(0, 8)}T000000`,
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Salon Booking//EN", "BEGIN:VEVENT",
+    `UID:${done.ref}@booking`, `DTSTAMP:${stamp(0).slice(0, 8)}T000000`,
     `DTSTART:${stamp(hh * 60 + mm)}`, `DTEND:${stamp(end)}`,
-    `SUMMARY:${serviceName} at ${site.name}`, `LOCATION:${site.address}\\, ${site.city}`,
+    `SUMMARY:${serviceName} at ${site.name}`, `LOCATION:${site.address.replace(/,/g, "\\,")}`,
     `DESCRIPTION:Booking ref ${done.ref}`, "END:VEVENT", "END:VCALENDAR",
   ].join("\r\n");
 }
 
 function Confirmed({ done, serviceName, date, time, onAgain }: { done: Done; serviceName: string; date: string; time: string; onAgain: () => void }) {
+  const { settings: site } = useContent();
   const download = () => {
-    const url = URL.createObjectURL(new Blob([ics(done, serviceName, date, time)], { type: "text/calendar" }));
+    const url = URL.createObjectURL(new Blob([ics(done, serviceName, date, time, site)], { type: "text/calendar" }));
     const a = document.createElement("a");
     a.href = url; a.download = `${site.name}-${done.ref}.ics`; a.click();
     URL.revokeObjectURL(url);
@@ -269,7 +274,7 @@ function Confirmed({ done, serviceName, date, time, onAgain }: { done: Done; ser
       </svg>
       <h3 className="font-display mt-6 text-5xl font-light">You&rsquo;re <span className="text-shade italic">booked.</span></h3>
       <p className="mt-4 text-cream/75">{serviceName} · {longDate(date)} at {formatTime(time)}</p>
-      <p className="mt-1 text-sm text-muted">Reference <span className="font-mono tracking-widest text-accent2">{done.ref}</span> · a confirmation is on its way to your inbox.</p>
+      <p className="mt-1 text-sm text-muted">Reference <span className="font-mono tracking-widest text-accent2">{done.ref}</span> · the salon will confirm your appointment by phone or email.</p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         <button onClick={download} className="btn-accent rounded-full px-7 py-3.5">Add to calendar</button>
         <button onClick={onAgain} className="btn-ghost rounded-full px-7 py-3.5">Book another</button>
@@ -279,7 +284,12 @@ function Confirmed({ done, serviceName, date, time, onAgain }: { done: Done; ser
 }
 
 /* ---- Shell ---- */
-export default function BookPanel() {
+function Skeleton() {
+  return <div className="grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"><div className="h-96 animate-pulse rounded-3xl bg-ink-3/60" /><div className="h-96 animate-pulse rounded-3xl bg-ink-3/60" /></div>;
+}
+
+function BookFlow({ live }: { live: Busy[] }) {
+  const opts = useSlotOpts(live);
   const [step, setStep] = useState<number>(() => (useBooking.getState().serviceId ? 1 : 0));
   const [done, setDone] = useState<{ result: Done; serviceName: string; date: string; time: string } | null>(null);
   const summary = useSummary();
@@ -301,7 +311,7 @@ export default function BookPanel() {
                 aria-current={i === step ? "step" : undefined}
                 className={`flex items-center gap-2.5 text-sm ${i === step ? "text-cream" : i < step ? "text-accent2" : "text-muted"}`}
               >
-                <span className={`grid size-7 place-items-center rounded-full border text-xs ${i === step ? "border-accent bg-accent text-ink" : i < step ? "border-accent2" : "border-line"}`}>{i < step ? "✓" : i + 1}</span>
+                <span className={`grid size-7 place-items-center rounded-full border text-xs ${i === step ? "border-accent bg-accent text-on-accent" : i < step ? "border-accent2" : "border-line"}`}>{i < step ? "✓" : i + 1}</span>
                 <span className="hidden sm:inline">{s}</span>
               </button>
               {i < steps.length - 1 && <span className="relative h-px flex-1 bg-line"><motion.span className="absolute inset-y-0 left-0 bg-accent" animate={{ width: i < step ? "100%" : "0%" }} /></span>}
@@ -312,7 +322,7 @@ export default function BookPanel() {
         <AnimatePresence mode="wait">
           <motion.div key={step} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.3 }}>
             {step === 0 && <StepService onNext={() => setStep(1)} />}
-            {step === 1 && <StepTime minutes={summary.minutes} onBack={() => setStep(0)} onNext={() => setStep(2)} />}
+            {step === 1 && <StepTime minutes={summary.minutes} opts={opts} onBack={() => setStep(0)} onNext={() => setStep(2)} />}
             {step === 2 && (
               <StepDetails
                 onBack={() => setStep(1)}
@@ -322,7 +332,18 @@ export default function BookPanel() {
           </motion.div>
         </AnimatePresence>
       </div>
-      <aside className="lg:sticky lg:top-24 lg:self-start"><Ticket summary={summary} /></aside>
+      <aside className="lg:sticky lg:top-24 lg:self-start"><Ticket summary={summary} opts={opts} /></aside>
     </div>
   );
+}
+
+export default function BookPanel() {
+  // Fetch the freshest busy times each time the tab opens (page content is cached ~30s).
+  const [busy, setBusy] = useState<Busy[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    getBusy().then((b) => alive && setBusy(b)).catch(() => alive && setBusy([]));
+    return () => { alive = false; };
+  }, []);
+  return busy ? <BookFlow live={busy} /> : <Skeleton />;
 }

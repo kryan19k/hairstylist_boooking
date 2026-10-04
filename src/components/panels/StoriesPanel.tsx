@@ -1,7 +1,6 @@
 "use client";
 import { motion } from "motion/react";
-import { reviews } from "@/lib/data";
-import { site } from "@/lib/site";
+import { useContent } from "../ContentProvider";
 import { goTab } from "@/lib/tabs";
 
 const Stars = ({ n }: { n: number }) => (
@@ -9,6 +8,7 @@ const Stars = ({ n }: { n: number }) => (
 );
 
 export default function StoriesPanel() {
+  const { reviews, settings: site } = useContent();
   return (
     <div>
       <div className="mb-12 grid gap-6 rounded-3xl border border-line p-6 sm:grid-cols-3 sm:p-8">
@@ -27,7 +27,7 @@ export default function StoriesPanel() {
       <div className="columns-1 gap-5 md:columns-2 lg:columns-3">
         {reviews.map((r, i) => (
           <motion.figure
-            key={r.name}
+            key={r.id}
             initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.08, duration: 0.6 }}
             whileHover={{ y: -4 }}
             className="glass relative mb-5 break-inside-avoid rounded-3xl p-6"
@@ -36,7 +36,7 @@ export default function StoriesPanel() {
             <Stars n={r.stars} />
             <blockquote className="font-display mt-4 text-xl leading-snug font-light">{r.quote}</blockquote>
             <figcaption className="mt-5 flex items-center gap-3 text-sm">
-              <span className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-accent2 to-accent text-sm font-bold text-ink">{r.name[0]}</span>
+              <span className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-accent2 to-accent text-sm font-bold text-on-accent">{r.name[0]}</span>
               <span><span className="block font-medium">{r.name}</span><span className="text-xs text-muted">{r.service}</span></span>
             </figcaption>
           </motion.figure>

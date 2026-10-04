@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { aftercare, faqs } from "@/lib/data";
-import { dayNames, site } from "@/lib/site";
+import { aftercare } from "@/lib/data";
+import { dayNames } from "@/lib/site";
+import Image from "next/image";
+import { useContent } from "../ContentProvider";
 import { formatTime, openNowLabel } from "@/lib/availability";
 import { useClientValue } from "@/lib/client-value";
 import { goTab } from "@/lib/tabs";
@@ -10,8 +12,9 @@ import { goTab } from "@/lib/tabs";
 const gifts = [50, 100, 150, 250];
 
 function Hours() {
+  const { settings: site } = useContent();
   const today = useClientValue(() => new Date().getDay(), -1);
-  const label = useClientValue(() => openNowLabel(new Date()), "");
+  const label = useClientValue(() => openNowLabel(new Date(), site.hours), "");
   return (
     <div className="glass rounded-3xl p-6">
       <div className="flex items-center justify-between">
@@ -34,6 +37,7 @@ function Hours() {
 }
 
 function Gift() {
+  const { settings: site } = useContent();
   const [amt, setAmt] = useState(100);
   return (
     <div className="paper relative overflow-hidden rounded-3xl p-6">
@@ -42,22 +46,30 @@ function Gift() {
       <h3 className="font-display mt-2 text-3xl">Give someone a glow-up</h3>
       <div className="mt-5 flex flex-wrap gap-2">
         {gifts.map((g) => (
-          <button key={g} onClick={() => setAmt(g)} aria-pressed={amt === g} className={`rounded-full border px-4 py-2 text-sm transition ${amt === g ? "border-paper-ink bg-paper-ink text-cream" : "border-paper-ink/30 hover:border-paper-ink"}`}>${g}</button>
+          <button key={g} onClick={() => setAmt(g)} aria-pressed={amt === g} className={`rounded-full border px-4 py-2 text-sm transition ${amt === g ? "border-paper-ink bg-paper-ink text-[var(--paper-from)]" : "border-paper-ink/30 hover:border-paper-ink"}`}>${g}</button>
         ))}
       </div>
-      <a href={`mailto:${site.email}?subject=Gift card request ($${amt})`} className="mt-6 inline-block rounded-full bg-paper-ink px-6 py-3 text-sm font-semibold text-cream transition hover:scale-[1.03]">Request a ${amt} gift card</a>
+      {(site.email || site.phone || site.instagram) && (
+        <a
+          href={site.email ? `mailto:${site.email}?subject=${encodeURIComponent(`Gift card request ($${amt})`)}` : site.phone ? `sms:${site.phone}` : `https://instagram.com/${site.instagram}`}
+          className="mt-6 inline-block rounded-full bg-paper-ink px-6 py-3 text-sm font-semibold text-[var(--paper-from)] transition hover:scale-[1.03]"
+        >
+          Request a ${amt} gift card
+        </a>
+      )}
     </div>
   );
 }
 
 function Faq() {
+  const { faqs } = useContent();
   const [open, setOpen] = useState<number | null>(0);
   return (
     <div>
       <h3 className="font-display text-3xl">Good questions</h3>
       <div className="mt-4 divide-y divide-line border-y border-line">
         {faqs.map((f, i) => (
-          <div key={f.q}>
+          <div key={f.id}>
             <button onClick={() => setOpen(open === i ? null : i)} aria-expanded={open === i} className="flex w-full items-center justify-between gap-4 py-4 text-left">
               <span className="font-medium">{f.q}</span>
               <motion.span animate={{ rotate: open === i ? 45 : 0 }} className="text-2xl text-accent">+</motion.span>
@@ -77,25 +89,27 @@ function Faq() {
 }
 
 export default function StudioPanel() {
+  const { settings: site } = useContent();
   return (
     <div className="space-y-16">
       <div className="grid items-center gap-10 lg:grid-cols-[1fr_1.2fr]">
         <div className="relative mx-auto aspect-[4/5] w-full max-w-sm">
           <div className="absolute inset-0 rotate-3 rounded-[2rem] border border-accent/40" />
           <div className="float-slow absolute inset-0 grid place-items-center overflow-hidden rounded-[2rem] bg-gradient-to-br from-ink-3 via-accent/30 to-counter/30">
-            <span className="font-display px-6 text-center text-6xl font-light italic text-cream/80">{site.stylist.split(" ")[0]}</span>
-            <span className="absolute bottom-4 text-[0.65rem] tracking-[0.3em] text-cream/50 uppercase">Portrait goes here</span>
+            {site.portraitUrl ? (
+              <Image src={site.portraitUrl} alt={site.stylist} fill sizes="(max-width:768px) 90vw, 384px" className="object-cover" />
+            ) : (
+              <span className="font-display px-6 text-center text-6xl font-light italic text-cream/80">{site.stylist.split(" ")[0]}</span>
+            )}
           </div>
         </div>
         <div>
-          <p className="text-xs tracking-[0.3em] text-accent uppercase">Meet your colorist</p>
-          <h3 className="font-display mt-3 text-4xl leading-tight font-light sm:text-5xl">Hair is the one accessory you <span className="text-shade italic">never take off.</span></h3>
-          <p className="mt-6 max-w-xl leading-relaxed text-cream/75">
-            I&rsquo;m {site.stylist}. For {site.yearsExperience} years I&rsquo;ve built a practice on slow, honest consultations and color that grows out beautifully. No rushed chairs, no cookie-cutter formulas: one client at a time, in a quiet studio where you can exhale.
-          </p>
+          <p className="text-xs tracking-[0.3em] text-accent uppercase">Meet your stylist</p>
+          <h3 className="font-display mt-3 text-4xl leading-tight font-light sm:text-5xl">{site.aboutTitle}</h3>
+          <p className="mt-6 max-w-xl leading-relaxed text-cream/75">{site.aboutBody}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <button onClick={() => goTab("book")} className="btn-accent rounded-full px-7 py-3.5">Book a consultation</button>
-            <a href={`https://instagram.com/${site.instagram}`} target="_blank" rel="noreferrer" className="btn-ghost rounded-full px-7 py-3.5">@{site.instagram}</a>
+            {site.instagram && <a href={`https://instagram.com/${site.instagram}`} target="_blank" rel="noreferrer" className="btn-ghost rounded-full px-7 py-3.5">@{site.instagram}</a>}
           </div>
         </div>
       </div>
@@ -104,13 +118,13 @@ export default function StudioPanel() {
         <Hours />
         <div className="glass rounded-3xl p-6">
           <h3 className="font-display text-2xl">Find us</h3>
-          <p className="mt-4 text-cream/80">{site.address}<br />{site.city}</p>
-          <p className="mt-4 text-sm text-muted">Street parking · 3 min from the L train · step-free entrance</p>
+          <p className="mt-4 text-cream/80">{site.address}</p>
+          {site.directionsNote && <p className="mt-4 text-sm text-muted">{site.directionsNote}</p>}
           <div className="mt-5 space-y-1 text-sm">
-            <a className="block text-accent2 hover:underline" href={`tel:${site.phone}`}>{site.phone}</a>
-            <a className="block text-accent2 hover:underline" href={`mailto:${site.email}`}>{site.email}</a>
+            {site.phone && <a className="block text-accent2 hover:underline" href={`tel:${site.phone}`}>{site.phone}</a>}
+            {site.email && <a className="block text-accent2 hover:underline" href={`mailto:${site.email}`}>{site.email}</a>}
           </div>
-          <a className="btn-ghost mt-5 inline-block rounded-full px-5 py-2.5 text-sm" target="_blank" rel="noreferrer" href={`https://maps.google.com/?q=${encodeURIComponent(`${site.address} ${site.city}`)}`}>Get directions ↗</a>
+          <a className="btn-ghost mt-5 inline-block rounded-full px-5 py-2.5 text-sm" target="_blank" rel="noreferrer" href={`https://maps.google.com/?q=${encodeURIComponent(site.address)}`}>Get directions ↗</a>
         </div>
         <Gift />
       </div>

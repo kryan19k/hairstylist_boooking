@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { useShade } from "@/lib/shade";
+import { useShade, useTheme } from "@/lib/shade";
 
 type Strand = { y: number; amp: number; freq: number; speed: number; phase: number; mix: number; w: number; a: number };
 
@@ -9,6 +9,7 @@ type Strand = { y: number; amp: number; freq: number; speed: number; phase: numb
 export default function StrandField({ className = "" }: { className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const shade = useShade();
+  const theme = useTheme();
 
   useEffect(() => {
     const canvas = ref.current;
@@ -55,12 +56,12 @@ export default function StrandField({ className = "" }: { className?: string }) 
       mouse.x += (mouse.tx - mouse.x) * 0.08;
       mouse.y += (mouse.ty - mouse.y) * 0.08;
       ctx.clearRect(0, 0, w, h);
-      ctx.globalCompositeOperation = "lighter";
+      ctx.globalCompositeOperation = theme === "light" ? "multiply" : "lighter";
       const step = 18;
       for (const s of strands) {
         const [r, g, b] = colorAt(s.mix);
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(${r},${g},${b},${s.a})`;
+        ctx.strokeStyle = `rgba(${r},${g},${b},${theme === "light" ? s.a * 1.15 : s.a})`;
         ctx.lineWidth = s.w;
         // Strands fan from a pinched root on the left to a wide flowing fall on the right.
         const baseSpread = h * 0.78;
@@ -111,7 +112,7 @@ export default function StrandField({ className = "" }: { className?: string }) 
       window.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerleave", onLeave);
     };
-  }, [shade]);
+  }, [shade, theme]);
 
   return <canvas ref={ref} aria-hidden className={`absolute inset-0 h-full w-full ${className}`} />;
 }

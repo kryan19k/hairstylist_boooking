@@ -1,6 +1,16 @@
-import { site } from "./site";
+import type { Hours } from "./site";
 
 export type Slot = { time: string; endsAt: string; taken: boolean };
+export type Busy = { date: string; time: string; minutes: number };
+export type SlotOpts = {
+  hours: Hours;
+  step: number;
+  leadHours: number;
+  now?: Date;
+  busy?: Busy[];
+  /** Pretend ~1/3 of slots are taken. Only used before the real database is live. */
+  demo?: boolean;
+};
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -29,8 +39,6 @@ export const formatDuration = (minutes: number) => {
   return [h ? `${h} hr${h > 1 ? "s" : ""}` : "", m ? `${m} min` : ""].filter(Boolean).join(" ");
 };
 
-// Deterministic pseudo-random so "already booked" slots look real and are the
-// same on server and client. Replaced by a Supabase query when the DB is wired.
 function hash(str: string) {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {
@@ -40,50 +48,48 @@ function hash(str: string) {
   return (h >>> 0) % 100;
 }
 
-export function hoursFor(key: string) {
-  return site.hours[parseDateKey(key).getDay()];
-}
+export const hoursFor = (key: string, hours: Hours) => hours[parseDateKey(key).getDay()] ?? null;
 
-/** Slots for a date. `now` (client local) trims anything inside the lead time. */
-export function getSlots(key: string, durationMin: number, now?: Date, extraTaken?: Set<string>): Slot[] {
-  const hours = hoursFor(key);
-  if (!hours) return [];
-  const open = toMinutes(hours[0]);
-  const close = toMinutes(hours[1]);
-  const slots: Slot[] = [];
-  const earliest = now ? now.getHours() * 60 + now.getMinutes() + site.leadHours * 60 : -1;
+/** Slots for a date. A slot is taken if it would overlap any existing booking. */
+export function getSlots(key: string, durationMin: number, o: SlotOpts): Slot[] {
+  const day = hoursFor(key, o.hours);
+  if (!day) return [];
+  const open = toMinutes(day[0]);
+  const close = toMinutes(day[1]);
+  const { now } = o;
+  if (now && parseDateKey(key) < parseDateKey(dateKey(now))) return [];
   const isToday = now ? dateKey(now) === key : false;
-  const isPast = now ? parseDateKey(key) < parseDateKey(dateKey(now)) : false;
-  if (isPast) return [];
+  const earliest = now ? now.getHours() * 60 + now.getMinutes() + o.leadHours * 60 : -1;
+  const busy = (o.busy ?? []).filter((b) => b.date === key).map((b) => [toMinutes(b.time), toMinutes(b.time) + b.minutes] as const);
 
-  for (let t = open; t + durationMin <= close; t += site.slotStepMinutes) {
+  const slots: Slot[] = [];
+  for (let t = open; t + durationMin <= close; t += o.step) {
     if (isToday && t < earliest) continue;
     const time = fromMinutes(t);
-    const taken = hash(`${key}T${time}`) < 34 || !!extraTaken?.has(`${key}T${time}`);
+    const clash = busy.some(([s, e]) => t < e && t + durationMin > s);
+    const taken = clash || (!!o.demo && hash(`${key}T${time}`) < 34);
     slots.push({ time, endsAt: fromMinutes(t + durationMin), taken });
   }
   return slots;
 }
 
-export function nextAvailable(now: Date, durationMin = 60): { key: string; time: string } | null {
+export function nextAvailable(now: Date, durationMin: number, o: Omit<SlotOpts, "now">): { key: string; time: string } | null {
   for (let i = 0; i < 30; i++) {
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
     const key = dateKey(d);
-    const slot = getSlots(key, durationMin, now).find((s) => !s.taken);
+    const slot = getSlots(key, durationMin, { ...o, now }).find((s) => !s.taken);
     if (slot) return { key, time: slot.time };
   }
   return null;
 }
 
-export function openNowLabel(now: Date) {
-  const hours = site.hours[now.getDay()];
+export function openNowLabel(now: Date, hours: Hours) {
+  const today = hours[now.getDay()];
   const mins = now.getHours() * 60 + now.getMinutes();
-  if (hours && mins >= toMinutes(hours[0]) && mins < toMinutes(hours[1])) {
-    return `Open until ${formatTime(hours[1])}`;
-  }
+  if (today && mins >= toMinutes(today[0]) && mins < toMinutes(today[1])) return `Open until ${formatTime(today[1])}`;
   for (let i = 0; i < 8; i++) {
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
-    const h = site.hours[d.getDay()];
+    const h = hours[d.getDay()];
     if (!h) continue;
     if (i === 0 && mins >= toMinutes(h[1])) continue;
     if (i === 0) return `Opens today ${formatTime(h[0])}`;
