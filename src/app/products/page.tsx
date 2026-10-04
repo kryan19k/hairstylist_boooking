@@ -5,12 +5,13 @@ import Dock from "@/components/Dock";
 import ProductsPanel from "@/components/ProductsPanel";
 import { ProductsHeading, ProductsCta } from "@/components/ProductsIntro";
 import { getContent } from "@/lib/content";
+import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 30;
 
 export async function generateMetadata(): Promise<Metadata> {
   const { settings: s } = await getContent();
-  return { title: `Products — ${s.name} ${s.tagline}`, description: `Salon products from ${s.name} ${s.tagline}, ${s.city}.` };
+  return pageMetadata(s, { title: "Products", path: "/products", description: `Salon products from ${s.name} ${s.tagline} in ${s.city}: eyelash extensions, shampoo, conditioner and treatments.` });
 }
 
 export default async function ProductsPage() {

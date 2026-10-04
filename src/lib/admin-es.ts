@@ -226,6 +226,14 @@ export const adminEs: Record<string, string> = {
   "Turn on staff schedules": "Activa los horarios del personal",
   "One-time step so each person has their own schedule and days off, and bookings are tracked per person. Open Supabase → SQL Editor → New query, paste this, press Run, then reload this page.": "Paso único para que cada persona tenga su propio horario y días libres, y las reservas se asignen por persona. Abre Supabase → SQL Editor → New query, pega esto, presiona Run y recarga esta página.",
 
+  "Search & sharing": "Búsqueda y compartir",
+  "What Google shows for your site and what appears when someone shares your link. Leave blank and it is written automatically from your details.": "Lo que Google muestra de tu sitio y lo que aparece cuando alguien comparte tu enlace. Déjalo vacío y se escribe automáticamente con tus datos.",
+  "Search title": "Título en buscadores",
+  "Search description": "Descripción en buscadores",
+  "Share image (1200 × 630 works best)": "Imagen para compartir (1200 × 630 es lo ideal)",
+  "Google Search Console code": "Código de Google Search Console",
+  "Optional: the verification code Google gives you.": "Opcional: el código de verificación que te da Google.",
+
   // list editor
   "+ Add new": "+ Agregar",
   "Nothing here yet. Click “Add new”.": "Aún no hay nada. Haz clic en “Agregar”.",

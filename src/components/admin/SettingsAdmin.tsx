@@ -73,7 +73,7 @@ export default function SettingsAdmin({ section }: { section: Section }) {
     const keys: Record<Section, (keyof SiteSettings)[]> = {
       profile: ["stylist", "portraitUrl", "aboutTitle", "aboutBody", "aboutKicker", "aboutMeet", "aboutCta", "yearsExperience", "clientsServed", "rating", "ownerSchedule", "ownerTakesBookings"],
       text: ["heroWord1", "heroWord2", "heroWord3", "heroBlurb", "marquee", "aftercare", "showGiftCards", "giftAmounts"],
-      shop: ["name", "tagline", "city", "address", "phone", "email", "instagram", "directionsNote", "defaultTheme", "defaultShade", "hours", "slotStepMinutes", "leadHours"],
+      shop: ["name", "tagline", "city", "address", "phone", "email", "instagram", "seoTitle", "seoDescription", "ogImageUrl", "googleVerification", "directionsNote", "defaultTheme", "defaultShade", "hours", "slotStepMinutes", "leadHours"],
     };
     const next: SiteSettings = { ...current, es: { ...current.es } };
     for (const k of keys[section]) (next as Record<string, unknown>)[k] = s[k];
@@ -244,6 +244,15 @@ export default function SettingsAdmin({ section }: { section: Section }) {
               <Field label="Time between start times (minutes)"><input {...num("slotStepMinutes")} /></Field>
               <Field label="Minimum notice (hours)" hint="Stops same-hour bookings"><input {...num("leadHours")} /></Field>
             </div>
+          </section>
+
+          <section className="grid gap-4 sm:grid-cols-2">
+            <h3 className="font-display text-xl sm:col-span-2">{tx("Search & sharing")}</h3>
+            <p className="text-sm text-muted sm:col-span-2">{tx("What Google shows for your site and what appears when someone shares your link. Leave blank and it is written automatically from your details.")}</p>
+            <Field label="Search title" hint={`${s.seoTitle.length}/60 · shows as the blue link in Google`} className="sm:col-span-2"><input {...text("seoTitle")} maxLength={90} /></Field>
+            <Field label="Search description" hint={`${s.seoDescription.length}/160 · the gray text under it`} className="sm:col-span-2"><textarea {...text("seoDescription")} rows={3} maxLength={220} /></Field>
+            <div className="sm:col-span-2"><ImageField label="Share image (1200 × 630 works best)" value={s.ogImageUrl || null} onChange={(u) => set("ogImageUrl", u ?? "")} /></div>
+            <Field label="Google Search Console code" hint="Optional: the verification code Google gives you." className="sm:col-span-2"><input {...text("googleVerification")} /></Field>
           </section>
         </>
       )}

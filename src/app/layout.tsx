@@ -3,6 +3,7 @@ import { Fraunces, Manrope } from "next/font/google";
 import { bootScript } from "@/lib/shade";
 import { shades } from "@/lib/shades";
 import { getContent } from "@/lib/content";
+import { rootMetadata } from "@/lib/seo";
 import { ContentProvider } from "@/components/ContentProvider";
 import Scissors from "@/components/Scissors";
 import "./globals.css";
@@ -18,11 +19,8 @@ const fraunces = Fraunces({
 const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"] });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { settings: s } = await getContent();
-  return {
-    title: `${s.name} ${s.tagline} — Color, Cuts & Styling in ${s.city}`,
-    description: `Book ${s.stylist} at ${s.name} ${s.tagline} in ${s.city}. Custom color, precision cuts and bridal styling. Browse the portfolio and reserve your chair online.`,
-  };
+  const { settings } = await getContent();
+  return rootMetadata(settings);
 }
 export const viewport: Viewport = { themeColor: "#1a0f1a" };
 

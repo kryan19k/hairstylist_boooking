@@ -39,6 +39,11 @@ export type SiteSettings = {
   /** The owner's own working days (null = same as the shop hours) and whether they take bookings. */
   ownerSchedule: Hours | null;
   ownerTakesBookings: boolean;
+  /** Search & sharing (blank = automatic). */
+  seoTitle: string;
+  seoDescription: string;
+  ogImageUrl: string;
+  googleVerification: string;
   /** Gift card section. */
   showGiftCards: boolean;
   giftAmounts: string;
@@ -92,6 +97,10 @@ export const defaultSettings: SiteSettings = {
   aboutKicker: "",
   aboutMeet: "",
   aboutCta: "",
+  seoTitle: "",
+  seoDescription: "",
+  ogImageUrl: "",
+  googleVerification: "",
   showGiftCards: true,
   ownerSchedule: null,
   ownerTakesBookings: true,
